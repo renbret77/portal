@@ -1,0 +1,208 @@
+"use client"
+
+import { useEffect, useState } from "react"
+import { Plus, Search, Shield, Calendar, Building2, User } from "lucide-react"
+import Link from "next/link"
+import { supabase } from "@/lib/supabase"
+import { Database } from "@/types/database.types"
+
+type Policy = Database['public']['Tables']['policies']['Row'] & {
+    clients: { first_name: string, last_name: string },
+    insurers: { name: string, alias: string },
+    insurance_lines: { name: string }
+}
+
+export default function PoliciesPage() {
+    const [policies, setPolicies] = useState<any[]>([])
+    const [loading, setLoading] = useState(true)
+    const [searchTerm, setSearchTerm] = useState("")
+
+    useEffect(() => {
+        fetchPolicies()
+    }, [])
+
+    const fetchPolicies = async () => {
+        try {
+            setLoading(true)
+            const { data, error } = await supabase
+                .from('policies')
+                .select(`
+                    *,
+                    clients (first_name, last_name),
+                    insurers (name, alias),
+                    insurance_lines (name)
+                `)
+                .order('created_at', { ascending: false })
+
+            if (error) throw error
+            setPolicies(data || [])
+        } catch (error) {
+            console.error('Error loading policies:', error)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    const filteredPolicies = policies.filter(policy =>
+        policy.policy_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.clients?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        policy.clients?.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+
+    const getStatusColor = (status: string) => {
+        switch (status.toLowerCase()) {
+            case 'vigente': return 'bg-emerald-100 text-emerald-800'
+            case 'vencida': return 'bg-rose-100 text-rose-800'
+            case 'cancelada': return 'bg-slate-100 text-slate-800'
+            case 'pendiente': return 'bg-amber-100 text-amber-800'
+            default: return 'bg-blue-100 text-blue-800'
+        }
+    }
+
+    return (
+        <div className="space-y-8">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold text-slate-900 tracking-tight">Gestión de Pólizas</h1>
+                    <p className="text-slate-500 mt-1">Administra el inventario de riesgos y vigencias.</p>
+                </div>
+                <Link href="/dashboard/policies/new" className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl flex items-center gap-2 font-semibold transition-all shadow-lg shadow-emerald-200 active:scale-95">
+                    <Plus className="w-5 h-5" />
+                    Nueva Póliza
+                </Link>
+            </div>
+
+            {/* Stats Overview (Mini) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-emerald-50 rounded-lg flex items-center justify-center text-emerald-600">
+                        <Shield className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Vigentes</p>
+                        <p className="text-2xl font-bold text-slate-900">{policies.filter(p => p.status === 'Vigente').length}</p>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-rose-50 rounded-lg flex items-center justify-center text-rose-600">
+                        <Calendar className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Por Vencer</p>
+                        <p className="text-2xl font-bold text-slate-900">0</p>
+                    </div>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                    <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600">
+                        <Building2 className="w-6 h-6" />
+                    </div>
+                    <div>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Aseguradoras</p>
+                        <p className="text-2xl font-bold text-slate-900">{new Set(policies.map(p => p.insurer_id)).size}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Filters & Search */}
+            <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                    <input
+                        type="text"
+                        placeholder="Buscar por número o cliente..."
+                        className="w-full pl-10 pr-4 py-2.5 rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm"
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+            </div>
+
+            {/* Policies Table */}
+            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                {loading ? (
+                    <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-4">
+                        <div className="w-8 h-8 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
+                        <p className="font-medium">Cargando catálogo de pólizas...</p>
+                    </div>
+                ) : filteredPolicies.length === 0 ? (
+                    <div className="p-16 text-center">
+                        <div className="bg-slate-50 mx-auto w-20 h-20 rounded-full flex items-center justify-center mb-6">
+                            <Shield className="w-10 h-10 text-slate-300" />
+                        </div>
+                        <h3 className="text-xl font-bold text-slate-900">No hay pólizas registradas</h3>
+                        <p className="text-slate-500 mt-2 max-w-xs mx-auto">Comienza agregando tu primera póliza para gestionar las vigencias y siniestros.</p>
+                        <Link href="/dashboard/policies/new" className="mt-6 inline-flex items-center text-emerald-600 font-semibold hover:underline">
+                            Registrar nueva póliza →
+                        </Link>
+                    </div>
+                ) : (
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left text-slate-600 border-collapse">
+                            <thead className="bg-slate-50/80 border-b border-slate-200 text-[11px] uppercase tracking-widest font-bold text-slate-500">
+                                <tr>
+                                    <th className="px-6 py-4">Póliza / Ramo</th>
+                                    <th className="px-6 py-4">Cliente</th>
+                                    <th className="px-6 py-4">Aseguradora</th>
+                                    <th className="px-6 py-4">Vigencia</th>
+                                    <th className="px-6 py-4">Estado</th>
+                                    <th className="px-6 py-4 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-slate-100">
+                                {filteredPolicies.map((policy) => (
+                                    <tr key={policy.id} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="px-6 py-5">
+                                            <div className="flex flex-col">
+                                                <span className="font-bold text-slate-900 group-hover:text-emerald-700 transition-colors">{policy.policy_number}</span>
+                                                <span className="text-xs text-slate-400 font-medium">{policy.insurance_lines?.name || 'Varios'}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-center gap-2">
+                                                <div className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-[10px] font-bold text-slate-600">
+                                                    {policy.clients?.first_name?.[0]}{policy.clients?.last_name?.[0]}
+                                                </div>
+                                                <span className="text-sm font-medium text-slate-700">
+                                                    {policy.clients?.first_name} {policy.clients?.last_name}
+                                                </span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm font-semibold text-slate-800">{policy.insurers?.alias || policy.insurers?.name}</span>
+                                                <span className="text-[10px] text-slate-400 uppercase tracking-tighter">{policy.payment_method}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex flex-col text-xs">
+                                                <span className="text-slate-500 font-medium">Ini: {new Date(policy.start_date).toLocaleDateString()}</span>
+                                                <span className="text-slate-900 font-bold whitespace-nowrap italic">Fin: {new Date(policy.end_date).toLocaleDateString()}</span>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-5">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm
+                                                ${getStatusColor(policy.status)}`}>
+                                                {policy.status}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-5 text-right">
+                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-transparent hover:border-emerald-100">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                                                </button>
+                                                <button className="p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-transparent hover:border-sky-100">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
+            </div>
+        </div>
+    )
+}
