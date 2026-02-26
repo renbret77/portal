@@ -63,22 +63,26 @@ export const getCollectionMessage = (
     // Cabecera Común
     const header = `${statusIcon} *${alertTitle}*\n\nHola *${clientName}*, espero que estés teniendo un excelente día. Te envío la información de tu próximo recibo a liquidar:\n\n`
 
-    // Construcción de Ficha de Recibo
-    const receiptInfo = (totalInstallments && totalInstallments > 1)
-        ? ` (Recibo ${currentInstallment || 1} de ${totalInstallments})`
-        : ''
-
     // Cuerpo de Datos (Ficha Técnica)
-    const body = [
+    const bodyItems = [
         `👤 *Asegurado:* ${clientName}`,
         `🏢 *Aseguradora:* ${insurerName}`,
         `🛡️ *Ramo:* ${policyType}`,
         `📄 *Descripción:* ${subBranch || 'Cobertura Original'}`,
-        `🔢 *Póliza/Recibo:* \`${policyNumber}\`${receiptInfo}`,
+        `🔢 *Póliza:* \`${policyNumber}\``
+    ]
+
+    if (totalInstallments && totalInstallments > 1) {
+        bodyItems.push(`🧾 *Recibo:* ${currentInstallment || 1} de ${totalInstallments}`)
+    }
+
+    bodyItems.push(
         `📆 *Periodo:* ${formatDate(startDate)} al ${formatDate(targetDate)}`,
         `💳 *Método:* ${paymentMethod}`,
         `💰 *Total a Pagar:* *${currencySymbol}${amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}*`
-    ].join('\n')
+    )
+
+    const body = bodyItems.join('\n')
 
     // Lógica de Semáforo / Días de Gracia
     let graceInfo = ''
