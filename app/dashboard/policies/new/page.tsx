@@ -71,20 +71,29 @@ export default function NewPolicyPage() {
         e.preventDefault()
         setLoading(true)
         try {
-            const { error } = await (supabase.from('policies') as any)
-                .insert([{
-                    ...formData,
-                    premium_net: parseFloat(formData.premium_net) || 0,
-                    tax: parseFloat(formData.tax) || 0,
-                    premium_total: parseFloat(formData.premium_total) || 0,
-                    issue_date: formData.issue_date || null
-                }])
+            // Clean empty strings to null for UUID foreign keys
+            const payload = {
+                ...formData,
+                premium_net: parseFloat(formData.premium_net) || 0,
+                tax: parseFloat(formData.tax) || 0,
+                premium_total: parseFloat(formData.premium_total) || 0,
+                issue_date: formData.issue_date || null,
+                agent_code_id: formData.agent_code_id || null,
+                branch_id: formData.branch_id || null,
+            }
 
-            if (error) throw error
+            console.log("PAYLOAD a insertar:", payload)
+            const { error, data } = await (supabase.from('policies') as any).insert([payload]).select()
+
+            if (error) {
+                console.error("Supabase returned error", error)
+                throw error
+            }
+
             router.push('/dashboard/policies')
-        } catch (error) {
-            console.error('Error saving policy:', error)
-            alert('Error al guardar la póliza')
+        } catch (error: any) {
+            console.error('Error saving policy complete:', error)
+            alert('Error detallado de Base de Datos:\n' + JSON.stringify(error, null, 2))
         } finally {
             setLoading(false)
         }
