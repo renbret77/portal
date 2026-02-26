@@ -49,14 +49,21 @@ export default function PoliciesPage() {
         policy.clients?.last_name.toLowerCase().includes(searchTerm.toLowerCase())
     )
 
-    const getStatusColor = (status: string) => {
-        switch (status.toLowerCase()) {
-            case 'vigente': return 'bg-emerald-100 text-emerald-800'
-            case 'vencida': return 'bg-rose-100 text-rose-800'
-            case 'cancelada': return 'bg-slate-100 text-slate-800'
-            case 'pendiente': return 'bg-amber-100 text-amber-800'
-            default: return 'bg-blue-100 text-blue-800'
-        }
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    const getComputedStatus = (policy: any) => {
+        if (policy.status === 'Cancelada') return { text: 'Cancelada', color: 'bg-slate-100 text-slate-800' }
+
+        const endDate = new Date(policy.end_date)
+        endDate.setHours(0, 0, 0, 0)
+
+        const diffTime = endDate.getTime() - today.getTime()
+        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+
+        if (diffDays < 0) return { text: 'Vencida', color: 'bg-rose-100 text-rose-800' }
+        if (diffDays <= 30) return { text: 'Por Vencer', color: 'bg-amber-100 text-amber-800' }
+        return { text: 'Vigente', color: 'bg-emerald-100 text-emerald-800' }
     }
 
     return (
@@ -81,7 +88,7 @@ export default function PoliciesPage() {
                     </div>
                     <div>
                         <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Vigentes</p>
-                        <p className="text-2xl font-bold text-slate-900">{policies.filter(p => p.status === 'Vigente').length}</p>
+                        <p className="text-2xl font-bold text-slate-900">{policies.filter(p => getComputedStatus(p).text === 'Vigente').length}</p>
                     </div>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
@@ -89,8 +96,8 @@ export default function PoliciesPage() {
                         <Calendar className="w-6 h-6" />
                     </div>
                     <div>
-                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Por Vencer</p>
-                        <p className="text-2xl font-bold text-slate-900">0</p>
+                        <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Por Vencer / Vencidas</p>
+                        <p className="text-2xl font-bold text-slate-900">{policies.filter(p => ['Por Vencer', 'Vencida'].includes(getComputedStatus(p).text)).length}</p>
                     </div>
                 </div>
                 <div className="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
@@ -182,8 +189,8 @@ export default function PoliciesPage() {
                                         </td>
                                         <td className="px-6 py-5">
                                             <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider shadow-sm
-                                                ${getStatusColor(policy.status)}`}>
-                                                {policy.status}
+                                                ${getComputedStatus(policy).color}`}>
+                                                {getComputedStatus(policy).text}
                                             </span>
                                         </td>
                                         <td className="px-6 py-5 text-right">

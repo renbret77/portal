@@ -137,38 +137,71 @@ export interface Database {
                 Row: {
                     id: string
                     client_id: string
+                    insurer_id: string
+                    agent_code_id: string | null
                     policy_number: string
-                    type: 'Auto' | 'GMM' | 'Vida' | 'Daños' | 'Hogar'
-                    carrier: string
+                    status: string
+                    branch_id: string | null
+                    sub_branch: string | null
                     start_date: string
                     end_date: string
-                    premium_amount: number
-                    status: 'active' | 'expired' | 'cancelled' | 'pending_renewal'
+                    issue_date: string | null
+                    renewal_of: string | null
+                    currency: string | null
+                    premium_net: number | null
+                    tax: number | null
+                    premium_total: number | null
+                    payment_method: string | null
+                    policy_data: any | null
+                    notes: string | null
                     created_at: string
+                    updated_at: string | null
                 }
                 Insert: {
                     id?: string
                     client_id: string
+                    insurer_id: string
+                    agent_code_id?: string | null
                     policy_number: string
-                    type: 'Auto' | 'GMM' | 'Vida' | 'Daños' | 'Hogar'
-                    carrier: string
+                    status?: string
+                    branch_id?: string | null
+                    sub_branch?: string | null
                     start_date: string
                     end_date: string
-                    premium_amount?: number
-                    status?: 'active' | 'expired' | 'cancelled' | 'pending_renewal'
+                    issue_date?: string | null
+                    renewal_of?: string | null
+                    currency?: string | null
+                    premium_net?: number | null
+                    tax?: number | null
+                    premium_total?: number | null
+                    payment_method?: string | null
+                    policy_data?: any | null
+                    notes?: string | null
                     created_at?: string
+                    updated_at?: string | null
                 }
                 Update: {
                     id?: string
                     client_id?: string
+                    insurer_id?: string
+                    agent_code_id?: string | null
                     policy_number?: string
-                    type?: 'Auto' | 'GMM' | 'Vida' | 'Daños' | 'Hogar'
-                    carrier?: string
+                    status?: string
+                    branch_id?: string | null
+                    sub_branch?: string | null
                     start_date?: string
                     end_date?: string
-                    premium_amount?: number
-                    status?: 'active' | 'expired' | 'cancelled' | 'pending_renewal'
+                    issue_date?: string | null
+                    renewal_of?: string | null
+                    currency?: string | null
+                    premium_net?: number | null
+                    tax?: number | null
+                    premium_total?: number | null
+                    payment_method?: string | null
+                    policy_data?: any | null
+                    notes?: string | null
                     created_at?: string
+                    updated_at?: string | null
                 }
             }
         }
