@@ -58,9 +58,19 @@ export default function NewPolicyPage() {
         description: '' // v19.1
     })
 
+    const parseNum = (val: any) => parseFloat(val?.toString().replace(/,/g, '')) || 0;
+
+    const formatInputCurrency = (val: string | number) => {
+        if (val === '' || val === null || val === undefined) return '';
+        const clean = val.toString().replace(/[^0-9.]/g, '');
+        const parts = clean.split('.');
+        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        if (parts.length > 2) parts.pop();
+        return parts.join('.');
+    }
+
     const formatCurrency = (val: any) => {
-        const n = parseFloat(val) || 0
-        return n.toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+        return parseNum(val).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     }
 
     const [installments, setInstallments] = useState<any[]>([])
@@ -94,35 +104,52 @@ export default function NewPolicyPage() {
         setFormData(prev => ({ ...prev, [name]: value }))
     }
 
-    // Lógica de Cálculos Automáticos (v18)
+    const handleAmountBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        if (!value) return;
+        const num = parseNum(value);
+        setFormData(prev => ({ ...prev, [name]: formatInputCurrency(num.toFixed(2)) }));
+    }
+
+    const handlePercentageBlur = (pctField: string, amountField: string) => {
+        const pct = parseNum(formData[pctField as keyof typeof formData]);
+        const net = parseNum(formData.premium_net);
+        const calcAmt = net * (pct / 100);
+        setFormData(prev => ({ ...prev, [amountField]: formatInputCurrency(calcAmt.toFixed(2)) }));
+    }
+
+    const handleVatPercentageBlur = () => {
+        const pct = parseNum(formData.tax_percentage);
+        const net = parseNum(formData.premium_net);
+        const fee = parseNum(formData.policy_fee);
+        const surch = parseNum(formData.surcharge_amount);
+        const disc = parseNum(formData.discount_amount);
+        const extra = parseNum(formData.extra_premium);
+        const base = net + fee + surch - disc + extra;
+        const vat = base * (pct / 100);
+        setFormData(prev => ({ ...prev, vat_amount: formatInputCurrency(vat.toFixed(2)), tax: vat.toFixed(2) }));
+    }
+
+    // Lógica de Cálculos Automáticos
     useEffect(() => {
-        const net = parseFloat(formData.premium_net) || 0
-        const fee = parseFloat(formData.policy_fee) || 0
-        const surchPct = parseFloat(formData.surcharge_percentage) || 0
-        const discPct = parseFloat(formData.discount_percentage) || 0
-        const extra = parseFloat(formData.extra_premium) || 0
-        const taxPct = parseFloat(formData.tax_percentage) || 0
+        const net = parseNum(formData.premium_net);
+        const fee = parseNum(formData.policy_fee);
+        const surch = parseNum(formData.surcharge_amount);
+        const disc = parseNum(formData.discount_amount);
+        const extra = parseNum(formData.extra_premium);
+        const vat = parseNum(formData.vat_amount);
 
-        // 1. Calcular Recargo y Descuento en monto
-        const surchAmt = net * (surchPct / 100)
-        const discAmt = net * (discPct / 100)
+        const total = net + fee + surch - disc + extra + vat;
 
-        // 2. Base para el IVA (Neta + Derechos + Recargos - Descuento)
-        const baseForTax = net + fee + surchAmt - discAmt + extra
-        const vat = baseForTax * (taxPct / 100)
-
-        // 3. Total Final
-        const total = baseForTax + vat
-
-        setFormData(prev => ({
-            ...prev,
-            surcharge_amount: surchAmt.toFixed(2),
-            discount_amount: discAmt.toFixed(2),
-            vat_amount: vat.toFixed(2),
-            premium_total: total.toFixed(2),
-            tax: vat.toFixed(2) // Sincronizar con el campo anterior
-        }))
-    }, [formData.premium_net, formData.policy_fee, formData.surcharge_percentage, formData.discount_percentage, formData.extra_premium, formData.tax_percentage])
+        setFormData(prev => {
+            const formattedTotal = total.toFixed(2);
+            if (prev.premium_total === formattedTotal) return prev;
+            return {
+                ...prev,
+                premium_total: formattedTotal
+            }
+        })
+    }, [formData.premium_net, formData.policy_fee, formData.surcharge_amount, formData.discount_amount, formData.extra_premium, formData.vat_amount])
 
     // Lógica de Vigencia Automática (v19.1)
     useEffect(() => {
@@ -164,12 +191,13 @@ export default function NewPolicyPage() {
     }, [formData.payment_method, formData.insurer_id])
 
     const generateInstallments = (count: number) => {
-        const netTotal = parseFloat(formData.premium_net) || 0
-        const feeTotal = parseFloat(formData.policy_fee) || 0
-        const surchPct = parseFloat(formData.surcharge_percentage) || 0
-        const taxPct = parseFloat(formData.tax_percentage) || 16
+        const netTotal = parseNum(formData.premium_net) || 0
+        const feeTotal = parseNum(formData.policy_fee) || 0
+        const surchPct = parseNum(formData.surcharge_percentage) || 0
+        const taxPct = parseNum(formData.tax_percentage) || 16
 
-        const surchTotal = netTotal * (surchPct / 100)
+        const surchTotal = parseNum(formData.surcharge_amount) || 0
+        const vatTotal = parseNum(formData.vat_amount) || 0
 
         const newInstallments = []
         const startDate = new Date(formData.start_date || new Date())
@@ -179,10 +207,8 @@ export default function NewPolicyPage() {
             const net = netTotal / count
             const surch = surchTotal / count
             const fee = i === 1 ? feeTotal : 0 // El derecho suele cobrarse en el 1er recibo
-
-            const subtotal = net + surch + fee
-            const vat = subtotal * (taxPct / 100)
-            const total = subtotal + vat
+            const vat = vatTotal / count
+            const total = net + surch + fee + vat
 
             // Calcular fechas (cada 12/count meses)
             const dueDate = new Date(startDate)
@@ -231,9 +257,9 @@ export default function NewPolicyPage() {
             // Clean empty strings to null for UUID foreign keys
             const payload = {
                 ...formData,
-                premium_net: parseFloat(formData.premium_net) || 0,
-                tax: parseFloat(formData.tax) || 0,
-                premium_total: parseFloat(formData.premium_total) || 0,
+                premium_net: parseNum(formData.premium_net),
+                tax: parseNum(formData.tax),
+                premium_total: parseNum(formData.premium_total),
                 issue_date: formData.issue_date || null,
                 agent_code_id: formData.agent_code_id || null,
                 branch_id: formData.branch_id || null,
@@ -242,12 +268,12 @@ export default function NewPolicyPage() {
                 payment_link: formData.payment_link || null,
                 is_domiciled: formData.is_domiciled,
                 // Nuevos campos financieros (v18)
-                policy_fee: parseFloat(formData.policy_fee) || 0,
-                surcharge_percentage: parseFloat(formData.surcharge_percentage) || 0,
-                surcharge_amount: parseFloat(formData.surcharge_amount) || 0,
-                discount_percentage: parseFloat(formData.discount_percentage) || 0,
-                discount_amount: parseFloat(formData.discount_amount) || 0,
-                extra_premium: parseFloat(formData.extra_premium) || 0,
+                policy_fee: parseNum(formData.policy_fee),
+                surcharge_percentage: parseNum(formData.surcharge_percentage),
+                surcharge_amount: parseNum(formData.surcharge_amount),
+                discount_percentage: parseNum(formData.discount_percentage),
+                discount_amount: parseNum(formData.discount_amount),
+                extra_premium: parseNum(formData.extra_premium),
                 tax_percentage: parseFloat(formData.tax_percentage) || 16,
                 vat_amount: parseFloat(formData.vat_amount) || 0,
                 // v19 SICAS fields
@@ -329,7 +355,7 @@ export default function NewPolicyPage() {
                         const isActive = step >= s.id
                         const isCurrent = step === s.id
                         return (
-                            <div key={s.id} className="relative z-10 flex flex-col items-center gap-2">
+                            <div key={s.id} className="relative z-10 flex flex-col items-center gap-2 cursor-pointer" onClick={() => setStep(s.id)}>
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isCurrent ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 border-2 border-emerald-400' :
                                     isActive ? 'bg-emerald-100 text-emerald-600 border-2 border-emerald-200' : 'bg-white text-slate-300 border-2 border-slate-100'
                                     }`}>
@@ -457,7 +483,7 @@ export default function NewPolicyPage() {
                                     <input
                                         type="text"
                                         name="description"
-                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
+                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all capitalize"
                                         placeholder="Ej. Jetta 2024 GL"
                                         value={formData.description}
                                         onChange={handleChange}
@@ -566,38 +592,75 @@ export default function NewPolicyPage() {
                     {
                         step === 4 && (
                             <div className="space-y-6 animate-in fade-in slide-in-from-right-4 duration-500">
-                                <div className="border-b border-slate-100 pb-4">
-                                    <h3 className="text-xl font-bold text-slate-900">Información Financiera</h3>
-                                    <p className="text-slate-500 text-sm italic">Detalle de primas y métodos de recaudación.</p>
+                                <div className="border-b border-slate-100 pb-4 mb-6">
+                                    <h3 className="text-xl font-bold text-slate-900">Configuración Financiera</h3>
+                                    <p className="text-slate-500 text-sm italic">Defina la moneda, forma de pago y los montos exactos de su carátula.</p>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                                    <div className="space-y-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 block ml-1">Moneda de Pago</label>
-                                            <select
-                                                name="currency"
-                                                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
-                                                value={formData.currency}
-                                                onChange={handleChange}
-                                            >
-                                                <option value="MXN">Pesos (MXN)</option>
-                                                <option value="USD">Dólares (USD)</option>
-                                            </select>
-                                        </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 block ml-1">Moneda</label>
+                                        <select
+                                            name="currency"
+                                            className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
+                                            value={formData.currency}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="MXN">Pesos (MXN)</option>
+                                            <option value="USD">Dólares (USD)</option>
+                                            <option value="UDI">UDIS</option>
+                                            <option value="EUR">Euros (EUR)</option>
+                                        </select>
+                                    </div>
 
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
+                                        <select
+                                            name="payment_method"
+                                            className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-emerald-700"
+                                            value={formData.payment_method}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="Contado">Anual / Contado</option>
+                                            <option value="Semestral">Semestral</option>
+                                            <option value="Trimestral">Trimestral</option>
+                                            <option value="Mensual">Mensual</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 block ml-1">Generación de Recibos</label>
+                                        <div className="flex items-center gap-2 p-3 bg-white rounded-xl border border-slate-200">
+                                            <div className="flex-1">
+                                                <p className="text-xs font-bold text-emerald-800">{formData.total_installments} recibos</p>
+                                                <p className="text-[10px] text-slate-500">Calculados auto.</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => generateInstallments(parseInt(formData.total_installments || '1'))}
+                                                className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                                            >
+                                                Generar Grid
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                    <div className="space-y-4">
                                         <div className="space-y-4 p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
                                             <div className="flex items-center justify-between group">
                                                 <span className="text-sm text-slate-500 font-medium">Prima Neta</span>
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-slate-300 font-bold">$</span>
                                                     <input
-                                                        type="number"
+                                                        type="text"
                                                         name="premium_net"
                                                         className="w-32 p-2 bg-slate-50 border border-slate-200 rounded-lg text-right font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                                                         placeholder="0.00"
                                                         value={formData.premium_net}
                                                         onChange={handleChange}
+                                                        onBlur={handleAmountBlur}
                                                     />
                                                 </div>
                                             </div>
@@ -607,11 +670,12 @@ export default function NewPolicyPage() {
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-slate-300 font-bold">$</span>
                                                     <input
-                                                        type="number"
+                                                        type="text"
                                                         name="policy_fee"
                                                         className="w-32 p-2 bg-slate-50 border border-slate-200 rounded-lg text-right font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
                                                         value={formData.policy_fee}
                                                         onChange={handleChange}
+                                                        onBlur={handleAmountBlur}
                                                     />
                                                 </div>
                                             </div>
@@ -625,12 +689,23 @@ export default function NewPolicyPage() {
                                                             name="surcharge_percentage"
                                                             value={formData.surcharge_percentage}
                                                             onChange={handleChange}
+                                                            onBlur={() => handlePercentageBlur('surcharge_percentage', 'surcharge_amount')}
                                                             className="w-12 text-xs p-1 border-b border-slate-200 outline-none focus:border-emerald-500"
                                                         />
                                                         <span className="text-[10px] text-slate-400 font-bold">%</span>
                                                     </div>
                                                 </div>
-                                                <span className="text-emerald-600 font-bold text-sm">+ ${formatCurrency(formData.surcharge_amount)}</span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-emerald-600 font-bold text-sm">+ $</span>
+                                                    <input
+                                                        type="text"
+                                                        name="surcharge_amount"
+                                                        value={formData.surcharge_amount}
+                                                        onChange={handleChange}
+                                                        onBlur={handleAmountBlur}
+                                                        className="w-24 font-bold text-emerald-600 text-sm bg-transparent border-b border-transparent hover:border-slate-200 focus:border-emerald-500 outline-none text-right"
+                                                    />
+                                                </div>
                                             </div>
 
                                             <div className="flex items-center justify-between group">
@@ -642,51 +717,22 @@ export default function NewPolicyPage() {
                                                             name="discount_percentage"
                                                             value={formData.discount_percentage}
                                                             onChange={handleChange}
+                                                            onBlur={() => handlePercentageBlur('discount_percentage', 'discount_amount')}
                                                             className="w-12 text-xs p-1 border-b border-slate-200 outline-none focus:border-rose-500"
                                                         />
                                                         <span className="text-[10px] text-slate-400 font-bold">%</span>
                                                     </div>
                                                 </div>
-                                                <span className="text-rose-500 font-bold text-sm">- ${formatCurrency(formData.discount_amount)}</span>
-                                            </div>
-
-                                            <div className="pt-4 mt-2 border-t border-slate-100 space-y-3">
-                                                <div className="flex items-center justify-between group">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[10px] text-slate-400 font-bold uppercase">Comisión Agente</span>
-                                                        <div className="flex items-center gap-1">
-                                                            <input
-                                                                type="number"
-                                                                name="commission_percentage"
-                                                                value={formData.commission_percentage}
-                                                                onChange={handleChange}
-                                                                className="w-10 text-[10px] p-0.5 border-b border-slate-200 outline-none focus:border-emerald-500 font-bold"
-                                                            />
-                                                            <span className="text-[10px] text-slate-300">%</span>
-                                                        </div>
-                                                    </div>
-                                                    <span className="text-emerald-700 font-black text-xs bg-emerald-50 px-2 py-1 rounded border border-emerald-100">
-                                                        + ${formatCurrency((parseFloat(formData.premium_net) || 0) * (parseFloat(formData.commission_percentage) / 100))}
-                                                    </span>
-                                                </div>
-
-                                                <div className="flex items-center justify-between group">
-                                                    <div className="flex flex-col">
-                                                        <span className="text-[10px] text-slate-400 font-bold uppercase">Honorarios Extra</span>
-                                                        <div className="flex items-center gap-1">
-                                                            <input
-                                                                type="number"
-                                                                name="fees_percentage"
-                                                                value={formData.fees_percentage}
-                                                                onChange={handleChange}
-                                                                className="w-10 text-[10px] p-0.5 border-b border-slate-200 outline-none focus:border-blue-500 font-bold"
-                                                            />
-                                                            <span className="text-[10px] text-slate-300">%</span>
-                                                        </div>
-                                                    </div>
-                                                    <span className="text-blue-700 font-black text-xs bg-blue-50 px-2 py-1 rounded border border-blue-100">
-                                                        + ${formatCurrency((parseFloat(formData.premium_net) || 0) * (parseFloat(formData.fees_percentage) / 100))}
-                                                    </span>
+                                                <div className="flex items-center gap-1">
+                                                    <span className="text-rose-500 font-bold text-sm">- $</span>
+                                                    <input
+                                                        type="text"
+                                                        name="discount_amount"
+                                                        value={formData.discount_amount}
+                                                        onChange={handleChange}
+                                                        onBlur={handleAmountBlur}
+                                                        className="w-24 font-bold text-rose-500 text-sm bg-transparent border-b border-transparent hover:border-slate-200 focus:border-rose-500 outline-none text-right"
+                                                    />
                                                 </div>
                                             </div>
                                         </div>
@@ -702,9 +748,29 @@ export default function NewPolicyPage() {
                                                     <span>{formData.currency}</span>
                                                 </div>
 
-                                                <div className="flex justify-between items-baseline">
-                                                    <span className="text-sm font-medium text-slate-400">Total Impuestos (IVA {formData.tax_percentage}%)</span>
-                                                    <span className="text-lg font-bold text-emerald-400">+ ${formatCurrency(formData.vat_amount)}</span>
+                                                <div className="flex justify-between items-baseline group">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="text-sm font-medium text-slate-400">Total Impuestos (IVA)</span>
+                                                        <input
+                                                            type="number"
+                                                            name="tax_percentage"
+                                                            value={formData.tax_percentage}
+                                                            onChange={handleChange}
+                                                            onBlur={handleVatPercentageBlur}
+                                                            className="w-10 bg-transparent border-b border-slate-600 outline-none focus:border-emerald-400 text-center text-xs text-slate-300"
+                                                        /> <span className="text-xs text-slate-300">%</span>
+                                                    </div>
+                                                    <div className="flex items-center gap-1">
+                                                        <span className="text-emerald-400 font-bold">+ $</span>
+                                                        <input
+                                                            type="text"
+                                                            name="vat_amount"
+                                                            value={formData.vat_amount}
+                                                            onChange={handleChange}
+                                                            onBlur={handleAmountBlur}
+                                                            className="w-24 bg-transparent border-b border-transparent hover:border-slate-600 outline-none focus:border-emerald-400 text-right font-bold text-emerald-400 text-lg"
+                                                        />
+                                                    </div>
                                                 </div>
 
                                                 <div className="pt-4 border-t border-white/10 mt-4 flex justify-between items-end">
@@ -719,65 +785,6 @@ export default function NewPolicyPage() {
                                                     </div>
                                                 </div>
                                             </div>
-                                        </div>
-
-                                        <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
-                                            <div className="flex gap-3">
-                                                <FileText className="w-5 h-5 text-amber-600 flex-shrink-0" />
-                                                <p className="text-xs text-amber-800 leading-relaxed font-medium">
-                                                    <span className="font-bold underline">Resumen:</span> Esta póliza consta de <span className="font-bold text-lg text-amber-900">{formData.total_installments}</span> recibos en total.
-                                                    Asegúrate de cargar los documentos de pago correspondientes.
-                                                </p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-2 text-right pt-4 border-t border-slate-100 flex flex-col items-end gap-1">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Total de Póliza</label>
-                                    <p className="text-4xl font-black text-slate-900 tracking-tighter">
-                                        <span className="text-xl font-bold text-slate-400 mr-2">{formData.currency}</span>
-                                        ${formatCurrency(formData.premium_total)}
-                                    </p>
-                                </div>
-
-                                <hr className="border-slate-100 my-8" />
-
-                                <div className="border-b border-slate-100 pb-4 mb-6">
-                                    <h3 className="text-xl font-bold text-slate-900">Configuración de Recibos y Forma de Pago</h3>
-                                    <p className="text-slate-500 text-sm italic">Defina la periodicidad y desglose de montos por recibo.</p>
-                                </div>
-
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
-                                        <select
-                                            name="payment_method"
-                                            className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-emerald-700"
-                                            value={formData.payment_method}
-                                            onChange={handleChange}
-                                        >
-                                            <option value="Contado">Anual / Contado</option>
-                                            <option value="Semestral">Semestral</option>
-                                            <option value="Trimestral">Trimestral</option>
-                                            <option value="Mensual">Mensual</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 block ml-1">Generación de Recibos</label>
-                                        <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                                            <div className="flex-1">
-                                                <p className="text-xs font-bold text-emerald-800">Se generarán {formData.total_installments} recibos</p>
-                                                <p className="text-[10px] text-emerald-600">Calculados automáticamente.</p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => generateInstallments(parseInt(formData.total_installments))}
-                                                className="px-3 py-1 bg-white text-emerald-600 text-xs font-bold rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                                            >
-                                                Generar Grid
-                                            </button>
                                         </div>
                                     </div>
                                 </div>

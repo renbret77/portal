@@ -45,9 +45,9 @@ export default function PoliciesPage() {
     }
 
     const filteredPolicies = policies.filter(policy =>
-        policy.policy_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.clients?.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        policy.clients?.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+        (policy.policy_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (policy.clients?.first_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (policy.clients?.last_name || '').toLowerCase().includes(searchTerm.toLowerCase())
     )
 
     const today = new Date()
