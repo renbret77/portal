@@ -122,8 +122,8 @@ export default function EditPolicyPage({ params }: { params: any }) {
                 .order('installment_number', { ascending: true })
 
             if (instData && instData.length > 0) {
-                setInstallments(instData.map(i => ({
-                    ...(i as any),
+                setInstallments(instData.map((i: any) => ({
+                    ...i,
                     premium_net: i.premium_net?.toString() || '0',
                     policy_fee: i.policy_fee?.toString() || '0',
                     surcharges: i.surcharges?.toString() || '0',
