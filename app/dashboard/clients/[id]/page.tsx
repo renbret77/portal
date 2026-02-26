@@ -75,11 +75,12 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
                         return `+52${phone}`
                     }
 
+                    const clientData = data as any;
                     setFormData({
-                        ...data,
-                        phone: ensureE164(data.phone),
-                        mobile_phone: ensureE164(data.mobile_phone),
-                        work_phone: ensureE164(data.work_phone)
+                        ...clientData,
+                        phone: ensureE164(clientData.phone),
+                        mobile_phone: ensureE164(clientData.mobile_phone),
+                        work_phone: ensureE164(clientData.work_phone)
                     })
                 }
             } catch (error) {
@@ -155,7 +156,8 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
 
             // Clean and Format Data
             const cleanedData: ClientInsert = {
-                ...formData,
+                ...(formData as any),
+                user_id: user.id,
                 // Apply Title Case to names and texts
                 first_name: toTitleCase(formData.first_name || ''),
                 last_name: toTitleCase(formData.last_name || ''),
@@ -168,7 +170,8 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
             if (cleanedData.birth_date === "") cleanedData.birth_date = null
 
             // Remove ID and created_at/user_id from update payload if present/readonly
-            const { id, created_at, user_id, ...updatePayload } = cleanedData as any
+            const { id, created_at, user_id, ...restPayload } = cleanedData as any
+            const updatePayload = restPayload as Database['public']['Tables']['clients']['Update']
 
             const { error } = await supabase
                 .from('clients')
@@ -327,7 +330,7 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
                                 <PhoneInput
                                     international
                                     defaultCountry="MX"
-                                    value={formData.mobile_phone}
+                                    value={formData.mobile_phone || undefined}
                                     onChange={(val) => handlePhoneChange(val, 'mobile_phone')}
                                     className="w-full px-4 py-2 rounded-lg border border-slate-200 phone-input-container"
                                 />
@@ -337,7 +340,7 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
                                 <PhoneInput
                                     international
                                     defaultCountry="MX"
-                                    value={formData.phone}
+                                    value={formData.phone || undefined}
                                     onChange={(val) => handlePhoneChange(val, 'phone')}
                                     className="w-full px-4 py-2 rounded-lg border border-slate-200 phone-input-container"
                                 />
@@ -347,7 +350,7 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
                                 <PhoneInput
                                     international
                                     defaultCountry="MX"
-                                    value={formData.work_phone}
+                                    value={formData.work_phone || undefined}
                                     onChange={(val) => handlePhoneChange(val, 'work_phone')}
                                     className="w-full px-4 py-2 rounded-lg border border-slate-200 phone-input-container"
                                 />
@@ -448,7 +451,7 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
                                                                 colony: data.colony || currentList[index].colony,
                                                                 city: data.municipality || currentList[index].city,
                                                                 state: data.state || currentList[index].state,
-                                                                risk_data: { level: data.socioeconomic_level, risk: data.risk_score }
+                                                                risk_data: { level: data.socioeconomic_level || '', risk: data.risk_score || '' }
                                                             };
                                                             return { ...prev, addresses: currentList };
                                                         });
