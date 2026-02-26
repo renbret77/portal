@@ -96,21 +96,22 @@ export default function EditPolicyPage({ params }: { params: any }) {
             if (pError) throw pError
 
             if (policy) {
+                const p: any = policy;
                 setFormData({
-                    ...policy,
-                    premium_net: policy.premium_net?.toString() || '',
-                    policy_fee: policy.policy_fee?.toString() || '0',
-                    surcharge_percentage: policy.surcharge_percentage?.toString() || '0',
-                    discount_percentage: policy.discount_percentage?.toString() || '0',
-                    extra_premium: policy.extra_premium?.toString() || '0',
-                    tax_percentage: policy.tax_percentage?.toString() || '16',
-                    commission_percentage: policy.commission_percentage?.toString() || '0',
-                    fees_percentage: policy.fees_percentage?.toString() || '0',
-                    total_installments: policy.total_installments?.toString() || '1',
-                    current_installment: policy.current_installment?.toString() || '1'
+                    ...p,
+                    premium_net: p.premium_net?.toString() || '',
+                    policy_fee: p.policy_fee?.toString() || '0',
+                    surcharge_percentage: p.surcharge_percentage?.toString() || '0',
+                    discount_percentage: p.discount_percentage?.toString() || '0',
+                    extra_premium: p.extra_premium?.toString() || '0',
+                    tax_percentage: p.tax_percentage?.toString() || '16',
+                    commission_percentage: p.commission_percentage?.toString() || '0',
+                    fees_percentage: p.fees_percentage?.toString() || '0',
+                    total_installments: p.total_installments?.toString() || '1',
+                    current_installment: p.current_installment?.toString() || '1'
                 })
 
-                if (policy.insurer_id) fetchAgentCodes(policy.insurer_id)
+                if (p.insurer_id) fetchAgentCodes(p.insurer_id)
             }
 
             // 3. Fetch Installments
@@ -122,7 +123,7 @@ export default function EditPolicyPage({ params }: { params: any }) {
 
             if (instData && instData.length > 0) {
                 setInstallments(instData.map(i => ({
-                    ...i,
+                    ...(i as any),
                     premium_net: i.premium_net?.toString() || '0',
                     policy_fee: i.policy_fee?.toString() || '0',
                     surcharges: i.surcharges?.toString() || '0',
