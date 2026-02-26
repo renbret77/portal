@@ -106,6 +106,23 @@ export default function CollectionTimeline({ policies }: { policies: any[] }) {
                                     <p className="text-sm text-slate-600 mt-1 line-clamp-2 italic">
                                         "{notification.messageText}"
                                     </p>
+                                    <div className="flex items-center gap-2 mt-3">
+                                        {/* WhatsApp Status Indicator */}
+                                        <div className={`flex items-center gap-1.5 px-2 py-1 rounded-lg border text-[10px] font-bold uppercase ${notification.policy_installments?.some((i: any) => i.whatsapp_sent) ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
+                                            <MessageCircle className="w-3.5 h-3.5" />
+                                            {notification.policy_installments?.some((i: any) => i.whatsapp_sent) ? 'Enviado' : 'Pendiente'}
+                                        </div>
+                                        {/* Email Mockup */}
+                                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border bg-slate-50 border-slate-100 text-slate-300 text-[10px] font-bold uppercase opacity-50" title="Correo (Próximamente)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+                                            Email
+                                        </div>
+                                        {/* Telegram Mockup */}
+                                        <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg border bg-slate-50 border-slate-100 text-slate-300 text-[10px] font-bold uppercase opacity-50" title="Telegram (Próximamente)">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.112l3.363 1.054 1.258 3.93a2.25 2.25 0 0 0 4.177.3l2.847-4.21 4.584 3.493a2.25 2.25 0 0 0 3.52-1.22l3.75-15a2.25 2.25 0 0 0-2.25-2.25c-.297 0-.585.056-.854.16z" /></svg>
+                                            Telegram
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="flex-shrink-0 w-full md:w-auto">
                                     {hasPhone ? (

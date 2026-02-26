@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { Plus, Search, Shield, Calendar, Building2, User } from "lucide-react"
+import { Plus, Search, Shield, Calendar, Building2, User, MessageCircle, CheckCircle2, AlertCircle } from "lucide-react"
 import Link from "next/link"
 import { supabase } from "@/lib/supabase"
 import { Database } from "@/types/database.types"
@@ -28,9 +28,10 @@ export default function PoliciesPage() {
                 .from('policies')
                 .select(`
                     *,
-                    clients (first_name, last_name),
+                    clients (first_name, last_name, phone),
                     insurers (name, alias),
-                    insurance_lines (name)
+                    insurance_lines (name),
+                    policy_installments (whatsapp_sent, whatsapp_status, due_date)
                 `)
                 .order('created_at', { ascending: false })
 
@@ -153,6 +154,7 @@ export default function PoliciesPage() {
                                     <th className="px-6 py-4">Aseguradora</th>
                                     <th className="px-6 py-4">Vigencia</th>
                                     <th className="px-6 py-4">Estado</th>
+                                    <th className="px-6 py-4">Comunicaciones</th>
                                     <th className="px-6 py-4 text-right">Acciones</th>
                                 </tr>
                             </thead>
@@ -193,14 +195,37 @@ export default function PoliciesPage() {
                                                 {getComputedStatus(policy).text}
                                             </span>
                                         </td>
+                                        <td className="px-6 py-5">
+                                            <div className="flex items-center gap-2">
+                                                {/* WhatsApp */}
+                                                <div className={`p-1.5 rounded-lg border ${policy.policy_installments?.some((i: any) => i.whatsapp_sent) ? 'bg-emerald-50 border-emerald-100 text-emerald-600' : 'bg-slate-50 border-slate-100 text-slate-300'}`} title="WhatsApp">
+                                                    <MessageCircle className="w-4 h-4" />
+                                                </div>
+                                                {/* Email (Mockup for now) */}
+                                                <div className="p-1.5 rounded-lg border bg-slate-50 border-slate-100 text-slate-300 opacity-50" title="Correo (Próximamente)">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="20" height="16" x="2" y="4" rx="2" /><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" /></svg>
+                                                </div>
+                                                {/* Telegram (Mockup for now) */}
+                                                <div className="p-1.5 rounded-lg border bg-slate-50 border-slate-100 text-slate-300 opacity-50" title="Telegram (Próximamente)">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.198 2.433a2.242 2.242 0 0 0-1.022.215l-16.5 7.5a2.25 2.25 0 0 0 .126 4.112l3.363 1.054 1.258 3.93a2.25 2.25 0 0 0 4.177.3l2.847-4.21 4.584 3.493a2.25 2.25 0 0 0 3.52-1.22l3.75-15a2.25 2.25 0 0 0-2.25-2.25c-.297 0-.585.056-.854.16z" /></svg>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td className="px-6 py-5 text-right">
-                                            <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <button className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-transparent hover:border-emerald-100">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></svg>
+                                            <div className="flex justify-end gap-2 transition-opacity">
+                                                <button
+                                                    onClick={() => {
+                                                        const message = encodeURIComponent(`Hola ${policy.clients?.first_name} 👋, te recordamos el pago de tu póliza ${policy.policy_number} de ${policy.insurers?.alias || policy.insurers?.name} 📄. ¡Saludos! ✅`)
+                                                        window.open(`https://wa.me/${policy.clients?.phone?.replace(/\D/g, '')}?text=${message}`, '_blank')
+                                                    }}
+                                                    className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors border border-transparent hover:border-emerald-100"
+                                                    title="Enviar recordatorio WhatsApp"
+                                                >
+                                                    <MessageCircle className="w-4 h-4" />
                                                 </button>
-                                                <button className="p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-transparent hover:border-sky-100">
+                                                <Link href={`/dashboard/policies/${policy.id}`} className="p-2 text-slate-400 hover:text-sky-600 hover:bg-sky-50 rounded-lg transition-colors border border-transparent hover:border-sky-100">
                                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" /><path d="m15 5 4 4" /></svg>
-                                                </button>
+                                                </Link>
                                             </div>
                                         </td>
                                     </tr>
