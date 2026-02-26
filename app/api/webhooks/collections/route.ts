@@ -33,12 +33,17 @@ export async function GET(request: Request) {
             .from('policies')
             .select(`
                 id, 
+                policy_number,
                 premium_net, 
+                premium_total,
+                start_date,
                 end_date,
                 payment_method,
                 status,
-                clients (first_name, phone),
-                insurers (name),
+                sub_branch,
+                notes,
+                clients (first_name, last_name, phone),
+                insurers (alias, name),
                 insurance_lines (name)
             `)
 
@@ -71,18 +76,22 @@ export async function GET(request: Request) {
             if (!clientPhone || clientPhone === '') return null
 
             const policyType = policy.insurance_lines?.name || 'Seguro'
-            const insurerName = policy.insurers?.name || 'Aseguradora'
-            const amount = Number(policy.premium_net) || 0
+            const insurerName = policy.insurers?.alias || policy.insurers?.name || 'Aseguradora'
+            const amount = Number(policy.premium_total) || Number(policy.premium_net) || 0
             const paymentMethod = (policy.payment_method || 'Anual') as PaymentMethod
 
             const messageStr = getCollectionMessage(
                 clientName,
                 policyType,
                 insurerName,
+                policy.policy_number,
                 amount,
                 paymentMethod,
                 diffDays,
-                targetDate.toISOString()
+                policy.start_date,
+                targetDate.toISOString(),
+                policy.sub_branch,
+                policy.notes
             )
 
             if (!messageStr) return null
