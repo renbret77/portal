@@ -302,7 +302,22 @@ export default function NewPolicyPage() {
                             </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
+                                    <select
+                                        name="payment_method"
+                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
+                                        value={formData.payment_method}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="Contado">Anual / Contado</option>
+                                        <option value="Semestral">Semestral</option>
+                                        <option value="Trimestral">Trimestral</option>
+                                        <option value="Mensual">Mensual</option>
+                                    </select>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">
                                         <label className="text-sm font-bold text-slate-700 block ml-1">Total de Recibos</label>
                                         <input
@@ -310,7 +325,7 @@ export default function NewPolicyPage() {
                                             name="total_installments"
                                             value={formData.total_installments}
                                             onChange={handleChange}
-                                            className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
+                                            className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-emerald-600"
                                             placeholder="Ej. 12"
                                         />
                                     </div>
@@ -326,45 +341,21 @@ export default function NewPolicyPage() {
                                         />
                                     </div>
                                 </div>
+                            </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 block ml-1">Link de Pago / Línea de Captura</label>
-                                    <input
-                                        type="text"
-                                        name="payment_link"
-                                        value={formData.payment_link}
-                                        onChange={handleChange}
-                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
-                                        placeholder="https://pagos.aseguradora.com/..."
-                                    />
-                                </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-700 block ml-1">Número de Póliza</label>
+                                <input
+                                    required
+                                    type="text"
+                                    placeholder="Ej. AX-55667788"
+                                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all uppercase font-bold"
+                                    value={formData.policy_number}
+                                    onChange={(e) => setFormData({ ...formData, policy_number: e.target.value })}
+                                />
+                            </div>
 
-                                <div className="flex items-center gap-2 py-2">
-                                    <input
-                                        type="checkbox"
-                                        id="is_domiciled"
-                                        name="is_domiciled"
-                                        checked={formData.is_domiciled}
-                                        onChange={handleChange}
-                                        className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
-                                    />
-                                    <label htmlFor="is_domiciled" className="text-sm font-bold text-slate-700">
-                                        Esta póliza está domiciliada (Cargo automático)
-                                    </label>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 block ml-1">Número de Póliza</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        placeholder="Ej. AX-55667788"
-                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all uppercase"
-                                        value={formData.policy_number}
-                                        onChange={(e) => setFormData({ ...formData, policy_number: e.target.value })}
-                                    />
-                                </div>
-
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-slate-700 block ml-1">Ramo del Seguro</label>
                                     <select
@@ -390,20 +381,46 @@ export default function NewPolicyPage() {
                                         onChange={(e) => setFormData({ ...formData, sub_branch: e.target.value })}
                                     />
                                 </div>
+                            </div>
 
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 block ml-1">Estado Operativo</label>
-                                    <select
-                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
-                                        value={formData.status}
-                                        onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    >
-                                        <option value="Vigente">Vigente</option>
-                                        <option value="Pendiente">Pendiente de Emisión</option>
-                                        <option value="Vencida">Vencida</option>
-                                        <option value="Cancelada">Cancelada</option>
-                                    </select>
-                                </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-700 block ml-1">Link de Pago / Línea de Captura</label>
+                                <input
+                                    type="text"
+                                    name="payment_link"
+                                    value={formData.payment_link}
+                                    onChange={handleChange}
+                                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-xs"
+                                    placeholder="https://pagos.aseguradora.com/..."
+                                />
+                            </div>
+
+                            <div className="flex items-center gap-2 py-2">
+                                <input
+                                    type="checkbox"
+                                    id="is_domiciled"
+                                    name="is_domiciled"
+                                    checked={formData.is_domiciled}
+                                    onChange={handleChange}
+                                    className="w-4 h-4 text-emerald-600 border-slate-300 rounded focus:ring-emerald-500"
+                                />
+                                <label htmlFor="is_domiciled" className="text-sm font-bold text-slate-700">
+                                    Esta póliza está domiciliada (Cargo automático)
+                                </label>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-sm font-bold text-slate-700 block ml-1">Estado Operativo</label>
+                                <select
+                                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
+                                    value={formData.status}
+                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                >
+                                    <option value="Vigente">Vigente</option>
+                                    <option value="Pendiente">Pendiente de Emisión</option>
+                                    <option value="Vencida">Vencida</option>
+                                    <option value="Cancelada">Cancelada</option>
+                                </select>
                             </div>
                         </div>
                     )}
@@ -470,33 +487,17 @@ export default function NewPolicyPage() {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                 <div className="space-y-4">
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 block ml-1">Moneda</label>
-                                            <select
-                                                name="currency"
-                                                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
-                                                value={formData.currency}
-                                                onChange={handleChange}
-                                            >
-                                                <option value="MXN">Pesos (MXN)</option>
-                                                <option value="USD">Dólares (USD)</option>
-                                            </select>
-                                        </div>
-                                        <div className="space-y-2">
-                                            <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
-                                            <select
-                                                name="payment_method"
-                                                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
-                                                value={formData.payment_method}
-                                                onChange={handleChange}
-                                            >
-                                                <option value="Contado">Anual / Contado</option>
-                                                <option value="Semestral">Semestral</option>
-                                                <option value="Trimestral">Trimestral</option>
-                                                <option value="Mensual">Mensual</option>
-                                            </select>
-                                        </div>
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 block ml-1">Moneda de Pago</label>
+                                        <select
+                                            name="currency"
+                                            className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
+                                            value={formData.currency}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="MXN">Pesos (MXN)</option>
+                                            <option value="USD">Dólares (USD)</option>
+                                        </select>
                                     </div>
 
                                     <div className="space-y-4 p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
