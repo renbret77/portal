@@ -38,7 +38,16 @@ export default function NewPolicyPage() {
         total_installments: '1',
         current_installment: '1',
         payment_link: '',
-        is_domiciled: false
+        is_domiciled: false,
+        // Campos Económicos Extendidos (v18)
+        policy_fee: '0',
+        surcharge_percentage: '0',
+        surcharge_amount: '0',
+        discount_percentage: '0',
+        discount_amount: '0',
+        extra_premium: '0',
+        tax_percentage: '16',
+        vat_amount: '0'
     })
 
     useEffect(() => {
@@ -70,6 +79,59 @@ export default function NewPolicyPage() {
         setFormData(prev => ({ ...prev, [name]: value }))
     }
 
+    // Lógica de Cálculos Automáticos (v18)
+    useEffect(() => {
+        const net = parseFloat(formData.premium_net) || 0
+        const fee = parseFloat(formData.policy_fee) || 0
+        const surchPct = parseFloat(formData.surcharge_percentage) || 0
+        const discPct = parseFloat(formData.discount_percentage) || 0
+        const extra = parseFloat(formData.extra_premium) || 0
+        const taxPct = parseFloat(formData.tax_percentage) || 0
+
+        // 1. Calcular Recargo y Descuento en monto
+        const surchAmt = net * (surchPct / 100)
+        const discAmt = net * (discPct / 100)
+
+        // 2. Base para el IVA (Neta + Derechos + Recargos - Descuento)
+        const baseForTax = net + fee + surchAmt - discAmt + extra
+        const vat = baseForTax * (taxPct / 100)
+
+        // 3. Total Final
+        const total = baseForTax + vat
+
+        setFormData(prev => ({
+            ...prev,
+            surcharge_amount: surchAmt.toFixed(2),
+            discount_amount: discAmt.toFixed(2),
+            vat_amount: vat.toFixed(2),
+            premium_total: total.toFixed(2),
+            tax: vat.toFixed(2) // Sincronizar con el campo anterior
+        }))
+    }, [formData.premium_net, formData.policy_fee, formData.surcharge_percentage, formData.discount_percentage, formData.extra_premium, formData.tax_percentage])
+
+    // Lógica de Reglas por Aseguradora / Forma Pago
+    useEffect(() => {
+        const isQualitas = formData.insurer_id === '801ef4de-0485-4eba-977b-7b8f121e4f53'
+
+        // Ajustar Cuotas Automáticas
+        let installments = '1'
+        let surcharge = '0'
+
+        switch (formData.payment_method) {
+            case 'Semestral': installments = '2'; if (isQualitas) surcharge = '5'; break;
+            case 'Trimestral': installments = '4'; if (isQualitas) surcharge = '7'; break;
+            case 'Mensual': installments = '12'; if (isQualitas) surcharge = '9'; break;
+            default: installments = '1'; surcharge = '0';
+        }
+
+        setFormData(prev => ({
+            ...prev,
+            total_installments: installments,
+            surcharge_percentage: surcharge,
+            policy_fee: isQualitas ? '650' : prev.policy_fee
+        }))
+    }, [formData.payment_method, formData.insurer_id])
+
     const handleInsurerChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const id = e.target.value
         setFormData({ ...formData, insurer_id: id, agent_code_id: '' })
@@ -92,7 +154,16 @@ export default function NewPolicyPage() {
                 total_installments: parseInt(formData.total_installments) || 1,
                 current_installment: parseInt(formData.current_installment) || 1,
                 payment_link: formData.payment_link || null,
-                is_domiciled: formData.is_domiciled
+                is_domiciled: formData.is_domiciled,
+                // Nuevos campos financieros (v18)
+                policy_fee: parseFloat(formData.policy_fee) || 0,
+                surcharge_percentage: parseFloat(formData.surcharge_percentage) || 0,
+                surcharge_amount: parseFloat(formData.surcharge_amount) || 0,
+                discount_percentage: parseFloat(formData.discount_percentage) || 0,
+                discount_amount: parseFloat(formData.discount_amount) || 0,
+                extra_premium: parseFloat(formData.extra_premium) || 0,
+                tax_percentage: parseFloat(formData.tax_percentage) || 16,
+                vat_amount: parseFloat(formData.vat_amount) || 0
             }
 
             console.log("PAYLOAD a insertar:", payload)
@@ -397,64 +468,140 @@ export default function NewPolicyPage() {
                                 <p className="text-slate-500 text-sm italic">Detalle de primas y métodos de recaudación.</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 block ml-1">Moneda</label>
-                                        <select
-                                            className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
-                                            value={formData.currency}
-                                            onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-                                        >
-                                            <option value="MXN">Pesos (MXN)</option>
-                                            <option value="USD">Dólares (USD)</option>
-                                        </select>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                <div className="space-y-4">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-slate-700 block ml-1">Moneda</label>
+                                            <select
+                                                name="currency"
+                                                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
+                                                value={formData.currency}
+                                                onChange={handleChange}
+                                            >
+                                                <option value="MXN">Pesos (MXN)</option>
+                                                <option value="USD">Dólares (USD)</option>
+                                            </select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
+                                            <select
+                                                name="payment_method"
+                                                className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
+                                                value={formData.payment_method}
+                                                onChange={handleChange}
+                                            >
+                                                <option value="Contado">Anual / Contado</option>
+                                                <option value="Semestral">Semestral</option>
+                                                <option value="Trimestral">Trimestral</option>
+                                                <option value="Mensual">Mensual</option>
+                                            </select>
+                                        </div>
                                     </div>
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
-                                        <select
-                                            className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
-                                            value={formData.payment_method}
-                                            onChange={(e) => setFormData({ ...formData, payment_method: e.target.value })}
-                                        >
-                                            <option value="Contado">Anual / Contado</option>
-                                            <option value="Semestral">Semestral</option>
-                                            <option value="Trimestral">Trimestral</option>
-                                            <option value="Mensual">Mensual</option>
-                                        </select>
+
+                                    <div className="space-y-4 p-5 bg-white rounded-2xl border border-slate-100 shadow-sm">
+                                        <div className="flex items-center justify-between group">
+                                            <span className="text-sm text-slate-500 font-medium">Prima Neta</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-300 font-bold">$</span>
+                                                <input
+                                                    type="number"
+                                                    name="premium_net"
+                                                    className="w-32 p-2 bg-slate-50 border border-slate-200 rounded-lg text-right font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                                    placeholder="0.00"
+                                                    value={formData.premium_net}
+                                                    onChange={handleChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between group">
+                                            <span className="text-sm text-slate-500 font-medium">Derecho de Póliza</span>
+                                            <div className="flex items-center gap-2">
+                                                <span className="text-slate-300 font-bold">$</span>
+                                                <input
+                                                    type="number"
+                                                    name="policy_fee"
+                                                    className="w-32 p-2 bg-slate-50 border border-slate-200 rounded-lg text-right font-bold focus:ring-2 focus:ring-emerald-500 outline-none transition-all"
+                                                    value={formData.policy_fee}
+                                                    onChange={handleChange}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between group">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm text-slate-500 font-medium">Recargo Financiero</span>
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="number"
+                                                        name="surcharge_percentage"
+                                                        value={formData.surcharge_percentage}
+                                                        onChange={handleChange}
+                                                        className="w-12 text-xs p-1 border-b border-slate-200 outline-none focus:border-emerald-500"
+                                                    />
+                                                    <span className="text-[10px] text-slate-400 font-bold">%</span>
+                                                </div>
+                                            </div>
+                                            <span className="text-emerald-600 font-bold text-sm">+ ${parseFloat(formData.surcharge_amount).toLocaleString()}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between group">
+                                            <div className="flex flex-col">
+                                                <span className="text-sm text-slate-500 font-medium">Descuento</span>
+                                                <div className="flex items-center gap-1">
+                                                    <input
+                                                        type="number"
+                                                        name="discount_percentage"
+                                                        value={formData.discount_percentage}
+                                                        onChange={handleChange}
+                                                        className="w-12 text-xs p-1 border-b border-slate-200 outline-none focus:border-rose-500"
+                                                    />
+                                                    <span className="text-[10px] text-slate-400 font-bold">%</span>
+                                                </div>
+                                            </div>
+                                            <span className="text-rose-500 font-bold text-sm">- ${parseFloat(formData.discount_amount).toLocaleString()}</span>
+                                        </div>
                                     </div>
                                 </div>
 
-                                <div className="space-y-4 bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                                    <div className="flex items-center justify-between font-medium">
-                                        <span className="text-slate-500">Prima Neta:</span>
-                                        <input
-                                            type="number"
-                                            className="bg-transparent border-b border-slate-300 w-24 text-right focus:border-emerald-500 outline-none"
-                                            placeholder="0.00"
-                                            value={formData.premium_net}
-                                            onChange={(e) => setFormData({ ...formData, premium_net: e.target.value })}
-                                        />
+                                <div className="space-y-4">
+                                    <div className="bg-slate-900 text-white p-6 rounded-3xl shadow-xl shadow-slate-200 relative overflow-hidden">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16"></div>
+
+                                        <div className="space-y-3 relative z-10">
+                                            <div className="flex justify-between text-slate-400 text-xs font-bold uppercase tracking-widest">
+                                                <span>Subtotal</span>
+                                                <span>{formData.currency}</span>
+                                            </div>
+
+                                            <div className="flex justify-between items-baseline">
+                                                <span className="text-sm font-medium text-slate-400">Total Impuestos (IVA {formData.tax_percentage}%)</span>
+                                                <span className="text-lg font-bold text-emerald-400">+ ${parseFloat(formData.vat_amount).toLocaleString()}</span>
+                                            </div>
+
+                                            <div className="pt-4 border-t border-white/10 mt-4 flex justify-between items-end">
+                                                <div className="flex flex-col">
+                                                    <span className="text-xs text-slate-500 font-bold uppercase">Prima Total a Cobrar</span>
+                                                    <span className="text-3xl font-black text-white">
+                                                        ${parseFloat(formData.premium_total).toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                                    </span>
+                                                </div>
+                                                <div className="p-2 bg-emerald-500/20 rounded-lg">
+                                                    <CreditCard className="w-6 h-6 text-emerald-400" />
+                                                </div>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <div className="flex items-center justify-between font-medium">
-                                        <span className="text-slate-500">IVA / Impuestos:</span>
-                                        <input
-                                            type="number"
-                                            className="bg-transparent border-b border-slate-300 w-24 text-right focus:border-emerald-500 outline-none"
-                                            placeholder="0.00"
-                                            value={formData.tax}
-                                            onChange={(e) => setFormData({ ...formData, tax: e.target.value })}
-                                        />
-                                    </div>
-                                    <div className="pt-2 border-t border-slate-200 flex items-center justify-between font-bold text-lg text-slate-900">
-                                        <span>Total:</span>
-                                        <input
-                                            type="number"
-                                            className="bg-transparent border-b-2 border-emerald-500 w-32 text-right outline-none"
-                                            placeholder="0.00"
-                                            value={formData.premium_total}
-                                            onChange={(e) => setFormData({ ...formData, premium_total: e.target.value })}
-                                        />
+
+                                    <div className="p-4 bg-amber-50 rounded-2xl border border-amber-100">
+                                        <div className="flex gap-3">
+                                            <FileText className="w-5 h-5 text-amber-600 flex-shrink-0" />
+                                            <p className="text-xs text-amber-800 leading-relaxed font-medium">
+                                                <span className="font-bold underline">Resumen:</span> Esta póliza consta de <span className="font-bold text-lg text-amber-900">{formData.total_installments}</span> recibos en total.
+                                                Asegúrate de cargar los documentos de pago correspondientes.
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

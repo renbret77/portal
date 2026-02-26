@@ -47,6 +47,10 @@ export async function GET(request: Request) {
                 current_installment,
                 payment_link,
                 is_domiciled,
+                policy_fee,
+                surcharge_amount,
+                discount_amount,
+                vat_amount,
                 clients (
                     first_name, 
                     last_name, 
@@ -84,15 +88,12 @@ export async function GET(request: Request) {
 
             // --- Lógica de Telefonía Internacional ---
             if (countryCode === 'MX') {
-                // Caso especial México: Forzar formato WhatsApp 52 1 [10 dígitos]
                 if (clientPhone.startsWith('52') && clientPhone.length === 12) {
                     clientPhone = '521' + clientPhone.substring(2)
                 } else if (clientPhone.length === 10) {
                     clientPhone = '521' + clientPhone
                 }
             }
-            // En otros países (ES, CO, etc.), Evolution API suele preferir el número tal cual con código de país 
-            // Si el teléfono no tiene el código de país y sabemos el país del agente, podríamos anteponerlo.
 
             if (!clientPhone || clientPhone === '') return null
 
@@ -121,7 +122,13 @@ export async function GET(request: Request) {
                 policy.current_installment,
                 policy.total_installments,
                 policy.payment_link,
-                currencySymbol
+                currencySymbol,
+                {
+                    policyFee: Number(policy.policy_fee) || 0,
+                    surchargeAmount: Number(policy.surcharge_amount) || 0,
+                    discountAmount: Number(policy.discount_amount) || 0,
+                    vatAmount: Number(policy.vat_amount) || 0
+                }
             )
 
             if (!messageStr) return null

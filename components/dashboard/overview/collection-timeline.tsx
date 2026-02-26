@@ -24,6 +24,10 @@ export default function CollectionTimeline({ policies }: { policies: any[] }) {
         const amount = Number(policy.premium_total) || Number(policy.premium_net) || 0
         const paymentMethod = (policy.payment_method || 'Anual') as PaymentMethod
 
+        const currentInstallment = Number(policy.current_installment) || 1
+        const totalInstallments = Number(policy.total_installments) || 1
+        const currencySymbol = policy.currency === 'EUR' ? '€' : policy.currency === 'USD' ? 'u$s' : '$'
+
         // Obtener el mensaje si aplica según reglas de negocio
         const messageStr = getCollectionMessage(
             clientName,
@@ -36,7 +40,17 @@ export default function CollectionTimeline({ policies }: { policies: any[] }) {
             policy.start_date,
             targetDate.toISOString(),
             policy.sub_branch,
-            policy.notes
+            policy.notes,
+            currentInstallment,
+            totalInstallments,
+            policy.payment_link,
+            currencySymbol,
+            {
+                policyFee: Number(policy.policy_fee) || 0,
+                surchargeAmount: Number(policy.surcharge_amount) || 0,
+                discountAmount: Number(policy.discount_amount) || 0,
+                vatAmount: Number(policy.vat_amount) || 0
+            }
         )
 
         return {

@@ -35,7 +35,13 @@ export const getCollectionMessage = (
     currentInstallment?: number,
     totalInstallments?: number,
     paymentLink?: string,
-    currencySymbol: string = '$'
+    currencySymbol: string = '$',
+    financials?: {
+        policyFee: number;
+        surchargeAmount: number;
+        discountAmount: number;
+        vatAmount: number;
+    }
 ) => {
     const isAnual = paymentMethod === 'Contado' || paymentMethod === 'Anual'
     const isDomiciliado = paymentMethod === 'Domiciliado' || paymentMethod?.toLowerCase().includes('tarjeta')
@@ -78,9 +84,23 @@ export const getCollectionMessage = (
 
     bodyItems.push(
         `📆 *Periodo:* ${formatDate(startDate)} al ${formatDate(targetDate)}`,
-        `💳 *Método:* ${paymentMethod}`,
-        `💰 *Total a Pagar:* *${currencySymbol}${amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}*`
+        `💳 *Método:* ${paymentMethod}`
     )
+
+    // Desglose Financiero Detallado (v18)
+    if (financials) {
+        const lines = []
+        if (financials.policyFee > 0) lines.push(`   • Derecho de Póliza: ${currencySymbol}${financials.policyFee.toLocaleString()}`)
+        if (financials.surchargeAmount > 0) lines.push(`   • Recargo Financiero: ${currencySymbol}${financials.surchargeAmount.toLocaleString()}`)
+        if (financials.discountAmount > 0) lines.push(`   • Descuento: -${currencySymbol}${financials.discountAmount.toLocaleString()}`)
+        if (financials.vatAmount > 0) lines.push(`   • IVA: ${currencySymbol}${financials.vatAmount.toLocaleString()}`)
+
+        if (lines.length > 0) {
+            bodyItems.push(`\n💰 *Desglose Financiero:*\n${lines.join('\n')}`)
+        }
+    }
+
+    bodyItems.push(`\n💵 *TOTAL A PAGAR:* *${currencySymbol}${amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}*`)
 
     const body = bodyItems.join('\n')
 
