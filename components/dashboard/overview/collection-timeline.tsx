@@ -20,8 +20,8 @@ export default function CollectionTimeline({ policies }: { policies: any[] }) {
         const clientName = policy.clients?.first_name || 'Cliente'
         const clientPhone = policy.clients?.phone || ''
         const policyType = policy.insurance_lines?.name || 'Seguro'
-        const insurerName = policy.insurers?.name || 'Aseguradora'
-        const amount = Number(policy.premium_net) || 0
+        const insurerName = policy.insurers?.alias || policy.insurers?.name || 'Aseguradora'
+        const amount = Number(policy.premium_total) || Number(policy.premium_net) || 0
         const paymentMethod = (policy.payment_method || 'Anual') as PaymentMethod
 
         // Obtener el mensaje si aplica según reglas de negocio
@@ -29,10 +29,14 @@ export default function CollectionTimeline({ policies }: { policies: any[] }) {
             clientName,
             policyType,
             insurerName,
+            policy.policy_number,
             amount,
             paymentMethod,
             diffDays,
-            targetDate.toISOString()
+            policy.start_date,
+            targetDate.toISOString(),
+            policy.sub_branch,
+            policy.notes
         )
 
         return {

@@ -34,9 +34,13 @@ export default function DashboardPage() {
                         status, 
                         premium_net, 
                         premium_total, 
+                        payment_method,
                         start_date, 
                         end_date,
+                        sub_branch,
+                        notes,
                         clients (first_name, last_name, phone, email),
+                        insurers (alias, name),
                         insurance_lines (name)
                     `)
 
