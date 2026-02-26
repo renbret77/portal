@@ -33,8 +33,6 @@ export default function NewClientPage() {
         first_name: "",
         last_name: "",
         email: "",
-        last_name: "",
-        email: "",
         secondary_email: "",
         phone: "",
         mobile_phone: "",
@@ -136,7 +134,7 @@ export default function NewClientPage() {
 
             const { error } = await supabase
                 .from('clients')
-                .insert(cleanedData)
+                .insert(cleanedData as any)
 
             if (error) throw error
 
@@ -290,7 +288,7 @@ export default function NewClientPage() {
                                 <PhoneInput
                                     international
                                     defaultCountry="MX"
-                                    value={formData.mobile_phone}
+                                    value={formData.mobile_phone || undefined}
                                     onChange={(val) => handlePhoneChange(val, 'mobile_phone')}
                                     className="w-full px-4 py-2 rounded-lg border border-slate-200 phone-input-container"
                                 />
@@ -300,7 +298,7 @@ export default function NewClientPage() {
                                 <PhoneInput
                                     international
                                     defaultCountry="MX"
-                                    value={formData.phone}
+                                    value={formData.phone || undefined}
                                     onChange={(val) => handlePhoneChange(val, 'phone')}
                                     className="w-full px-4 py-2 rounded-lg border border-slate-200 phone-input-container"
                                 />
@@ -310,7 +308,7 @@ export default function NewClientPage() {
                                 <PhoneInput
                                     international
                                     defaultCountry="MX"
-                                    value={formData.work_phone}
+                                    value={formData.work_phone || undefined}
                                     onChange={(val) => handlePhoneChange(val, 'work_phone')}
                                     className="w-full px-4 py-2 rounded-lg border border-slate-200 phone-input-container"
                                 />
@@ -399,8 +397,9 @@ export default function NewClientPage() {
                                                 // 2. Geo Intelligence Lookup (only on full zip)
                                                 if (newZip.length === 5) {
                                                     const { data } = await supabase.from('postal_codes_intelligence').select('*').eq('zip_code', newZip).single();
+                                                    const geoData = data as any;
 
-                                                    if (data) {
+                                                    if (geoData) {
                                                         // Use functional update to ensure we have latest state
                                                         setFormData(prev => {
                                                             const currentList = [...(prev.addresses as any[])];
@@ -408,10 +407,10 @@ export default function NewClientPage() {
                                                             currentList[index] = {
                                                                 ...currentList[index],
                                                                 zip: newZip, // Enforce current zip
-                                                                colony: data.colony || currentList[index].colony,
-                                                                city: data.municipality || currentList[index].city,
-                                                                state: data.state || currentList[index].state,
-                                                                risk_data: { level: data.socioeconomic_level, risk: data.risk_score }
+                                                                colony: geoData.colony || currentList[index].colony,
+                                                                city: geoData.municipality || currentList[index].city,
+                                                                state: geoData.state || currentList[index].state,
+                                                                risk_data: { level: geoData.socioeconomic_level || '', risk: geoData.risk_score || '' }
                                                             };
                                                             return { ...prev, addresses: currentList };
                                                         });

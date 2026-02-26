@@ -28,6 +28,7 @@ export default function NewPolicyPage() {
         sub_branch: '',
         start_date: '',
         end_date: '',
+        issue_date: '',
         currency: 'MXN',
         premium_net: '',
         tax: '',
@@ -70,13 +71,13 @@ export default function NewPolicyPage() {
         e.preventDefault()
         setLoading(true)
         try {
-            const { error } = await supabase
-                .from('policies')
+            const { error } = await (supabase.from('policies') as any)
                 .insert([{
                     ...formData,
                     premium_net: parseFloat(formData.premium_net) || 0,
                     tax: parseFloat(formData.tax) || 0,
                     premium_total: parseFloat(formData.premium_total) || 0,
+                    issue_date: formData.issue_date || null
                 }])
 
             if (error) throw error
@@ -126,7 +127,7 @@ export default function NewPolicyPage() {
                         return (
                             <div key={s.id} className="relative z-10 flex flex-col items-center gap-2">
                                 <div className={`w-10 h-10 rounded-full flex items-center justify-center transition-all duration-300 ${isCurrent ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 border-2 border-emerald-400' :
-                                        isActive ? 'bg-emerald-100 text-emerald-600 border-2 border-emerald-200' : 'bg-white text-slate-300 border-2 border-slate-100'
+                                    isActive ? 'bg-emerald-100 text-emerald-600 border-2 border-emerald-200' : 'bg-white text-slate-300 border-2 border-slate-100'
                                     }`}>
                                     {isActive && !isCurrent && step > s.id ? <CheckCircle2 className="w-6 h-6" /> : <Icon className="w-5 h-5" />}
                                 </div>

@@ -64,8 +64,7 @@ export function InsurerModal({ isOpen, onClose, onSuccess, insurerToEdit }: Insu
 
             if (formData.id) {
                 // Update
-                const { error } = await supabase
-                    .from('insurers')
+                const { error } = await (supabase.from('insurers') as any)
                     .update({
                         name: formData.name,
                         alias: formData.alias,
@@ -76,8 +75,7 @@ export function InsurerModal({ isOpen, onClose, onSuccess, insurerToEdit }: Insu
                 if (error) throw error
             } else {
                 // Insert
-                const { error } = await supabase
-                    .from('insurers')
+                const { error } = await (supabase.from('insurers') as any)
                     .insert([{
                         name: formData.name,
                         alias: formData.alias,

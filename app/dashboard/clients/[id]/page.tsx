@@ -173,8 +173,7 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
             const { id, created_at, user_id, ...restPayload } = cleanedData as any
             const updatePayload = restPayload as Database['public']['Tables']['clients']['Update']
 
-            const { error } = await supabase
-                .from('clients')
+            const { error } = await (supabase.from('clients') as any)
                 .update(updatePayload)
                 .eq('id', params.id)
 
@@ -439,8 +438,9 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
                                                 // 2. Geo Intelligence Lookup (only on full zip)
                                                 if (newZip.length === 5) {
                                                     const { data } = await supabase.from('postal_codes_intelligence').select('*').eq('zip_code', newZip).single();
+                                                    const geoData = data as any;
 
-                                                    if (data) {
+                                                    if (geoData) {
                                                         // Use functional update to ensure we have latest state
                                                         setFormData(prev => {
                                                             const currentList = [...(prev.addresses as any[])];
@@ -448,10 +448,10 @@ export default function EditClientPage(props: { params: Promise<{ id: string }> 
                                                             currentList[index] = {
                                                                 ...currentList[index],
                                                                 zip: newZip, // Enforce current zip
-                                                                colony: data.colony || currentList[index].colony,
-                                                                city: data.municipality || currentList[index].city,
-                                                                state: data.state || currentList[index].state,
-                                                                risk_data: { level: data.socioeconomic_level || '', risk: data.risk_score || '' }
+                                                                colony: geoData.colony || currentList[index].colony,
+                                                                city: geoData.municipality || currentList[index].city,
+                                                                state: geoData.state || currentList[index].state,
+                                                                risk_data: { level: geoData.socioeconomic_level || '', risk: geoData.risk_score || '' }
                                                             };
                                                             return { ...prev, addresses: currentList };
                                                         });
