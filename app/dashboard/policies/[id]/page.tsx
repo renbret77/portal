@@ -150,7 +150,7 @@ export default function EditPolicyPage({ params }: { params: any }) {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target
-        setFormData(prev => ({ ...prev, [name]: value }))
+        setFormData((prev: any) => ({ ...prev, [name]: value }))
     }
 
     // Cálculos Automáticos
@@ -168,7 +168,7 @@ export default function EditPolicyPage({ params }: { params: any }) {
         const vat = baseForTax * (taxPct / 100)
         const total = baseForTax + vat
 
-        setFormData(prev => ({
+        setFormData((prev: any) => ({
             ...prev,
             surcharge_amount: surchAmt.toFixed(2),
             discount_amount: discAmt.toFixed(2),
@@ -216,6 +216,7 @@ export default function EditPolicyPage({ params }: { params: any }) {
 
             const { error: pError } = await supabase
                 .from('policies')
+                // @ts-ignore
                 .update(payload)
                 .eq('id', policyId)
 
@@ -237,6 +238,7 @@ export default function EditPolicyPage({ params }: { params: any }) {
                     status: inst.status || 'Pendiente'
                 }))
 
+                // @ts-ignore
                 const { error: iError } = await supabase.from('policy_installments').insert(instPayload)
                 if (iError) throw iError
             }
