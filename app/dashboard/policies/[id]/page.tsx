@@ -60,7 +60,7 @@ export default function EditPolicyPage({ params }: { params: any }) {
         description: ''
     })
 
-    const parseNum = (val: any) => parseFloat(val?.toString().replace(/,/g, '')) || 0;
+    const parseNum = (val: any) => parseFloat(String(val || '0').replace(/,/g, '')) || 0;
 
     const formatInputCurrency = (val: string | number) => {
         if (val === '' || val === null || val === undefined) return '';
@@ -112,11 +112,18 @@ export default function EditPolicyPage({ params }: { params: any }) {
                     premium_net: p.premium_net?.toString() || '',
                     policy_fee: p.policy_fee?.toString() || '0',
                     surcharge_percentage: p.surcharge_percentage?.toString() || '0',
+                    surcharge_amount: p.surcharge_amount?.toString() || '0',
                     discount_percentage: p.discount_percentage?.toString() || '0',
+                    discount_amount: p.discount_amount?.toString() || '0',
                     extra_premium: p.extra_premium?.toString() || '0',
                     tax_percentage: p.tax_percentage?.toString() || '16',
+                    vat_amount: p.vat_amount?.toString() || '0',
                     commission_percentage: p.commission_percentage?.toString() || '0',
+                    commission_amount: p.commission_amount?.toString() || '0',
                     fees_percentage: p.fees_percentage?.toString() || '0',
+                    fees_amount: p.fees_amount?.toString() || '0',
+                    adjustment_amount: p.adjustment_amount?.toString() || '0',
+                    premium_subtotal: p.premium_subtotal?.toString() || '0',
                     total_installments: p.total_installments?.toString() || '1',
                     current_installment: p.current_installment?.toString() || '1'
                 })

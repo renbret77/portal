@@ -58,7 +58,7 @@ export default function NewPolicyPage() {
         description: '' // v19.1
     })
 
-    const parseNum = (val: any) => parseFloat(val?.toString().replace(/,/g, '')) || 0;
+    const parseNum = (val: any) => parseFloat(String(val || '0').replace(/,/g, '')) || 0;
 
     const formatInputCurrency = (val: string | number) => {
         if (val === '' || val === null || val === undefined) return '';
