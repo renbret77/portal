@@ -34,7 +34,8 @@ export const getCollectionMessage = (
     notes?: string,
     currentInstallment?: number,
     totalInstallments?: number,
-    paymentLink?: string
+    paymentLink?: string,
+    currencySymbol: string = '$'
 ) => {
     const isAnual = paymentMethod === 'Contado' || paymentMethod === 'Anual'
     const isDomiciliado = paymentMethod === 'Domiciliado' || paymentMethod?.toLowerCase().includes('tarjeta')
@@ -76,7 +77,7 @@ export const getCollectionMessage = (
         `🔢 *Póliza/Recibo:* \`${policyNumber}\`${receiptInfo}`,
         `📆 *Periodo:* ${formatDate(startDate)} al ${formatDate(targetDate)}`,
         `💳 *Método:* ${paymentMethod}`,
-        `💰 *Total a Pagar:* *$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}*`
+        `💰 *Total a Pagar:* *${currencySymbol}${amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}*`
     ].join('\n')
 
     // Lógica de Semáforo / Días de Gracia

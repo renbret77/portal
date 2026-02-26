@@ -36,6 +36,7 @@ export async function GET(request: Request) {
                 policy_number,
                 premium_net, 
                 premium_total,
+                currency,
                 start_date,
                 end_date,
                 payment_method,
@@ -46,7 +47,12 @@ export async function GET(request: Request) {
                 current_installment,
                 payment_link,
                 is_domiciled,
-                clients (first_name, last_name, phone),
+                clients (
+                    first_name, 
+                    last_name, 
+                    phone,
+                    profiles (country_code, default_currency)
+                ),
                 insurers (alias, name),
                 insurance_lines (name)
             `)
@@ -68,21 +74,37 @@ export async function GET(request: Request) {
             const diffTime = targetDate.getTime() - today.getTime()
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
-            const clientName = policy.clients?.first_name || 'Cliente'
-            let clientPhone = (policy.clients?.phone || '').replace(/\D/g, '')
+            const client = policy.clients
+            const agentProfile = Array.isArray(client?.profiles) ? client.profiles[0] : client?.profiles
+            const countryCode = agentProfile?.country_code || 'MX'
+            const defaultCurrency = policy.currency || agentProfile?.default_currency || 'MXN'
 
-            // Caso especial México: Forzar formato WhatsApp 52 1 [10 dígitos]
-            if (clientPhone.startsWith('52') && clientPhone.length === 12) {
-                clientPhone = '521' + clientPhone.substring(2)
+            const clientName = client?.first_name || 'Cliente'
+            let clientPhone = (client?.phone || '').replace(/\D/g, '')
+
+            // --- Lógica de Telefonía Internacional ---
+            if (countryCode === 'MX') {
+                // Caso especial México: Forzar formato WhatsApp 52 1 [10 dígitos]
+                if (clientPhone.startsWith('52') && clientPhone.length === 12) {
+                    clientPhone = '521' + clientPhone.substring(2)
+                } else if (clientPhone.length === 10) {
+                    clientPhone = '521' + clientPhone
+                }
             }
+            // En otros países (ES, CO, etc.), Evolution API suele preferir el número tal cual con código de país 
+            // Si el teléfono no tiene el código de país y sabemos el país del agente, podríamos anteponerlo.
 
-            // Si el cliente no tiene teléfono, no perdemos tiempo regresándolo a N8N
             if (!clientPhone || clientPhone === '') return null
 
             const policyType = policy.insurance_lines?.name || 'Seguro'
             const insurerName = policy.insurers?.alias || policy.insurers?.name || 'Aseguradora'
             const amount = Number(policy.premium_total) || Number(policy.premium_net) || 0
             const paymentMethod = (policy.payment_method || 'Anual') as PaymentMethod
+
+            // Mapeo de Símbolo de Moneda
+            let currencySymbol = '$'
+            if (defaultCurrency === 'EUR') currencySymbol = '€'
+            if (defaultCurrency === 'GBP') currencySymbol = '£'
 
             const messageStr = getCollectionMessage(
                 clientName,
@@ -98,7 +120,8 @@ export async function GET(request: Request) {
                 policy.notes,
                 policy.current_installment,
                 policy.total_installments,
-                policy.payment_link
+                policy.payment_link,
+                currencySymbol
             )
 
             if (!messageStr) return null
@@ -110,10 +133,11 @@ export async function GET(request: Request) {
                 message: messageStr,
                 urgency_days: diffDays,
                 payment_method: paymentMethod,
-                // Payload extra para Email
+                // Payload extra para Email / Otros
                 is_domiciled: policy.is_domiciled,
                 payment_link: policy.payment_link,
-                receipt_number: `${policy.current_installment || 1}/${policy.total_installments || 1}`
+                receipt_number: `${policy.current_installment || 1}/${policy.total_installments || 1}`,
+                currency: defaultCurrency
             }
         }).filter(item => item !== null)
 
