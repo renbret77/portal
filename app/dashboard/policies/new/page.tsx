@@ -426,141 +426,6 @@ export default function NewPolicyPage() {
                                     />
                                 </div>
                                 <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 block ml-1">Descripción del Bien</label>
-                                    <input
-                                        type="text"
-                                        name="description"
-                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
-                                        placeholder="Ej. Jetta 2024 GL"
-                                        value={formData.description}
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
-                                    <select
-                                        name="payment_method"
-                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-emerald-700"
-                                        value={formData.payment_method}
-                                        onChange={handleChange}
-                                    >
-                                        <option value="Contado">Anual / Contado</option>
-                                        <option value="Semestral">Semestral</option>
-                                        <option value="Trimestral">Trimestral</option>
-                                        <option value="Mensual">Mensual</option>
-                                    </select>
-                                </div>
-
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 block ml-1">Configuración de Recibos</label>
-                                    <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
-                                        <div className="flex-1">
-                                            <p className="text-xs font-bold text-emerald-800">Se generarán {formData.total_installments} recibos</p>
-                                            <p className="text-[10px] text-emerald-600">Calculados automáticamente.</p>
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => generateInstallments(parseInt(formData.total_installments))}
-                                            className="px-3 py-1 bg-white text-emerald-600 text-xs font-bold rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
-                                        >
-                                            Regenerar
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* TABLA SICAS DE RECIBOS EDITABLES (v19) */}
-                            <div className="mt-4 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                                <div className="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center">
-                                    <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Gestión de Recibos (Estilo SICAS)</span>
-                                    <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">Editable</span>
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-xs">
-                                        <thead className="bg-slate-100 text-slate-500 font-bold">
-                                            <tr>
-                                                <th className="p-3">#</th>
-                                                <th className="p-3">Vencimiento</th>
-                                                <th className="p-3">Prima Neta</th>
-                                                <th className="p-3">Derecho</th>
-                                                <th className="p-3">IVA</th>
-                                                <th className="p-3 text-right">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 italic">
-                                            {installments.map((inst, idx) => (
-                                                <tr key={idx} className="hover:bg-slate-50/50">
-                                                    <td className="p-3 font-bold text-slate-400">{inst.installment_number}</td>
-                                                    <td className="p-2">
-                                                        <input
-                                                            type="date"
-                                                            value={inst.due_date}
-                                                            onChange={(e) => handleInstallmentChange(idx, 'due_date', e.target.value)}
-                                                            className="bg-transparent border-none focus:ring-0 p-1 font-medium w-full"
-                                                        />
-                                                    </td>
-                                                    <td className="p-2">
-                                                        <input
-                                                            type="number"
-                                                            value={inst.premium_net}
-                                                            onChange={(e) => handleInstallmentChange(idx, 'premium_net', e.target.value)}
-                                                            className="bg-transparent border-none focus:ring-0 p-1 w-20 text-right"
-                                                        />
-                                                    </td>
-                                                    <td className="p-2">
-                                                        <input
-                                                            type="number"
-                                                            value={inst.policy_fee}
-                                                            onChange={(e) => handleInstallmentChange(idx, 'policy_fee', e.target.value)}
-                                                            className="bg-transparent border-none focus:ring-0 p-1 w-16 text-right"
-                                                        />
-                                                    </td>
-                                                    <td className="p-2">
-                                                        <input
-                                                            type="number"
-                                                            value={inst.vat_amount}
-                                                            onChange={(e) => handleInstallmentChange(idx, 'vat_amount', e.target.value)}
-                                                            className="bg-transparent border-none focus:ring-0 p-1 w-20 text-right"
-                                                        />
-                                                    </td>
-                                                    <td className="p-3 text-right font-bold text-slate-900 bg-slate-50/30">
-                                                        ${parseFloat(inst.total_amount).toLocaleString()}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-700 block ml-1">Descripción del Bien (Automóvil, Inmueble, etc.)</label>
-                                <input
-                                    type="text"
-                                    placeholder="Ej. Jetta 2024 GL / Casa Habitación"
-                                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-medium"
-                                    value={formData.description}
-                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-slate-700 block ml-1">Número de Póliza</label>
-                                    <input
-                                        required
-                                        type="text"
-                                        placeholder="Ej. AX-55667788"
-                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all uppercase font-bold"
-                                        value={formData.policy_number}
-                                        onChange={(e) => setFormData({ ...formData, policy_number: e.target.value })}
-                                    />
-                                </div>
-
-                                <div className="space-y-2">
                                     <label className="text-sm font-bold text-slate-700 block ml-1">Ramo del Seguro</label>
                                     <select
                                         required
@@ -587,7 +452,20 @@ export default function NewPolicyPage() {
                                         onChange={(e) => setFormData({ ...formData, sub_branch: e.target.value })}
                                     />
                                 </div>
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-slate-700 block ml-1">Descripción del Bien (Auto, Inmueble, etc.)</label>
+                                    <input
+                                        type="text"
+                                        name="description"
+                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all"
+                                        placeholder="Ej. Jetta 2024 GL"
+                                        value={formData.description}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
 
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-slate-700 block ml-1">Estado Operativo</label>
                                     <select
@@ -601,18 +479,17 @@ export default function NewPolicyPage() {
                                         <option value="Cancelada">Cancelada</option>
                                     </select>
                                 </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <label className="text-sm font-bold text-slate-700 block ml-1">Link de Pago / Línea de Captura</label>
-                                <input
-                                    type="text"
-                                    name="payment_link"
-                                    value={formData.payment_link}
-                                    onChange={handleChange}
-                                    className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-xs"
-                                    placeholder="https://pagos.aseguradora.com/..."
-                                />
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-slate-700 block ml-1">Link de Pago / Línea de Captura</label>
+                                    <input
+                                        type="text"
+                                        name="payment_link"
+                                        value={formData.payment_link}
+                                        onChange={handleChange}
+                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all text-xs"
+                                        placeholder="https://pagos.aseguradora.com/..."
+                                    />
+                                </div>
                             </div>
 
                             <div className="flex items-center gap-2 py-2">
@@ -863,6 +740,115 @@ export default function NewPolicyPage() {
                                         ${formatCurrency(formData.premium_total)}
                                     </p>
                                 </div>
+
+                                <hr className="border-slate-100 my-8" />
+
+                                <div className="border-b border-slate-100 pb-4 mb-6">
+                                    <h3 className="text-xl font-bold text-slate-900">Configuración de Recibos y Forma de Pago</h3>
+                                    <p className="text-slate-500 text-sm italic">Defina la periodicidad y desglose de montos por recibo.</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
+                                        <select
+                                            name="payment_method"
+                                            className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-emerald-700"
+                                            value={formData.payment_method}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="Contado">Anual / Contado</option>
+                                            <option value="Semestral">Semestral</option>
+                                            <option value="Trimestral">Trimestral</option>
+                                            <option value="Mensual">Mensual</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 block ml-1">Generación de Recibos</label>
+                                        <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                                            <div className="flex-1">
+                                                <p className="text-xs font-bold text-emerald-800">Se generarán {formData.total_installments} recibos</p>
+                                                <p className="text-[10px] text-emerald-600">Calculados automáticamente.</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => generateInstallments(parseInt(formData.total_installments))}
+                                                className="px-3 py-1 bg-white text-emerald-600 text-xs font-bold rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                            >
+                                                Generar Grid
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* TABLA SICAS DE RECIBOS EDITABLES (v19) */}
+                                {installments.length > 0 && (
+                                    <div className="mt-6 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                        <div className="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center">
+                                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Gestión de Recibos (Estilo SICAS)</span>
+                                            <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">Editable</span>
+                                        </div>
+                                        <div className="overflow-x-auto">
+                                            <table className="w-full text-left text-xs">
+                                                <thead className="bg-slate-100 text-slate-500 font-bold">
+                                                    <tr>
+                                                        <th className="p-3">#</th>
+                                                        <th className="p-3">Vencimiento</th>
+                                                        <th className="p-3">Prima Neta</th>
+                                                        <th className="p-3">Derecho</th>
+                                                        <th className="p-3">IVA</th>
+                                                        <th className="p-3 text-right">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody className="divide-y divide-slate-100 italic">
+                                                    {installments.map((inst, idx) => (
+                                                        <tr key={idx} className="hover:bg-slate-50/50">
+                                                            <td className="p-3 font-bold text-slate-400">{inst.installment_number}</td>
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="date"
+                                                                    value={inst.due_date}
+                                                                    onChange={(e) => handleInstallmentChange(idx, 'due_date', e.target.value)}
+                                                                    className="bg-transparent border-none focus:ring-0 p-1 font-medium w-full"
+                                                                />
+                                                            </td>
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="number"
+                                                                    value={inst.premium_net}
+                                                                    onChange={(e) => handleInstallmentChange(idx, 'premium_net', e.target.value)}
+                                                                    className="bg-transparent border-none focus:ring-0 p-1 w-20 text-right"
+                                                                />
+                                                            </td>
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="number"
+                                                                    value={inst.policy_fee}
+                                                                    onChange={(e) => handleInstallmentChange(idx, 'policy_fee', e.target.value)}
+                                                                    className="bg-transparent border-none focus:ring-0 p-1 w-16 text-right"
+                                                                />
+                                                            </td>
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="number"
+                                                                    value={inst.vat_amount}
+                                                                    onChange={(e) => handleInstallmentChange(idx, 'vat_amount', e.target.value)}
+                                                                    className="bg-transparent border-none focus:ring-0 p-1 w-20 text-right"
+                                                                />
+                                                            </td>
+                                                            <td className="p-3 text-right font-bold text-slate-900 bg-slate-50/30 border-l border-slate-100">
+                                                                ${parseFloat(inst.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+
+                                <hr className="border-slate-100 my-8" />
 
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-slate-700 block ml-1">Observaciones Internas</label>

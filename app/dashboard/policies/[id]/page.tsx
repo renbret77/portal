@@ -178,6 +178,45 @@ export default function EditPolicyPage({ params }: { params: any }) {
         }))
     }, [formData.premium_net, formData.policy_fee, formData.surcharge_percentage, formData.discount_percentage, formData.extra_premium, formData.tax_percentage])
 
+    const generateInstallments = (count: number) => {
+        const netTotal = parseFloat(formData.premium_net) || 0
+        const feeTotal = parseFloat(formData.policy_fee) || 0
+        const surchPct = parseFloat(formData.surcharge_percentage) || 0
+        const taxPct = parseFloat(formData.tax_percentage) || 16
+
+        const surchTotal = netTotal * (surchPct / 100)
+
+        const newInstallments = []
+        const startDate = new Date(formData.start_date || new Date())
+
+        for (let i = 1; i <= count; i++) {
+            // Dividir montos (simétrico por defecto)
+            const net = netTotal / count
+            const surch = surchTotal / count
+            const fee = i === 1 ? feeTotal : 0 // El derecho suele cobrarse en el 1er recibo
+
+            const subtotal = net + surch + fee
+            const vat = subtotal * (taxPct / 100)
+            const total = subtotal + vat
+
+            // Calcular fechas (cada 12/count meses)
+            const dueDate = new Date(startDate)
+            dueDate.setMonth(startDate.getMonth() + (i - 1) * (12 / count))
+
+            newInstallments.push({
+                installment_number: i,
+                due_date: dueDate.toISOString().split('T')[0],
+                premium_net: net.toFixed(2),
+                policy_fee: fee.toFixed(2),
+                surcharges: surch.toFixed(2),
+                vat_amount: vat.toFixed(2),
+                total_amount: total.toFixed(2),
+                status: 'Pendiente'
+            })
+        }
+        setInstallments(newInstallments)
+    }
+
     const handleInstallmentChange = (index: number, field: string, value: string) => {
         const updated = [...installments]
         updated[index][field] = value
@@ -376,46 +415,6 @@ export default function EditPolicyPage({ params }: { params: any }) {
                                     />
                                 </div>
                             </div>
-
-                            <div className="border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                                <div className="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center text-xs font-bold text-slate-600">
-                                    GESTIÓN DE RECIBOS EDITABLE
-                                </div>
-                                <div className="overflow-x-auto">
-                                    <table className="w-full text-left text-xs">
-                                        <thead className="bg-slate-100 text-slate-500 font-bold">
-                                            <tr>
-                                                <th className="p-3">#</th>
-                                                <th className="p-3">Vencimiento</th>
-                                                <th className="p-3">Prima Neta</th>
-                                                <th className="p-3">Derecho</th>
-                                                <th className="p-3">IVA</th>
-                                                <th className="p-3 text-right">Total</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 italic">
-                                            {installments.map((inst, idx) => (
-                                                <tr key={idx} className="hover:bg-slate-50/50">
-                                                    <td className="p-3 font-bold text-slate-400">{inst.installment_number}</td>
-                                                    <td className="p-2 italic text-slate-400">{inst.due_date}</td>
-                                                    <td className="p-2">
-                                                        <input type="number" value={inst.premium_net} onChange={(e) => handleInstallmentChange(idx, 'premium_net', e.target.value)} className="bg-transparent border-none p-1 w-20 text-right" />
-                                                    </td>
-                                                    <td className="p-2">
-                                                        <input type="number" value={inst.policy_fee} onChange={(e) => handleInstallmentChange(idx, 'policy_fee', e.target.value)} className="bg-transparent border-none p-1 w-16 text-right" />
-                                                    </td>
-                                                    <td className="p-2">
-                                                        <input type="number" value={inst.vat_amount} onChange={(e) => handleInstallmentChange(idx, 'vat_amount', e.target.value)} className="bg-transparent border-none p-1 w-20 text-right" />
-                                                    </td>
-                                                    <td className="p-3 text-right font-bold text-slate-900 bg-slate-50/30">
-                                                        ${formatCurrency(inst.total_amount)}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
                         </div>
                     )}
 
@@ -476,6 +475,97 @@ export default function EditPolicyPage({ params }: { params: any }) {
                                     </p>
                                 </div>
                             </div>
+
+                            <hr className="border-slate-100 my-8" />
+
+                            <div className="border-b border-slate-100 pb-4 mb-6">
+                                <h3 className="text-xl font-bold text-slate-900">Configuración de Recibos y Forma de Pago</h3>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
+                                    <select
+                                        name="payment_method"
+                                        className="w-full p-3 rounded-xl border border-slate-200 bg-slate-50/50 focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-emerald-700"
+                                        value={formData.payment_method}
+                                        onChange={handleChange}
+                                    >
+                                        <option value="Contado">Anual / Contado</option>
+                                        <option value="Semestral">Semestral</option>
+                                        <option value="Trimestral">Trimestral</option>
+                                        <option value="Mensual">Mensual</option>
+                                    </select>
+                                </div>
+
+                                <div className="space-y-2">
+                                    <label className="text-sm font-bold text-slate-700 block ml-1">Generación de Recibos</label>
+                                    <div className="flex items-center gap-2 p-3 bg-emerald-50 rounded-xl border border-emerald-100">
+                                        <div className="flex-1">
+                                            <p className="text-xs font-bold text-emerald-800">Se generarán {formData.total_installments} recibos</p>
+                                            <p className="text-[10px] text-emerald-600">Calculados automáticamente.</p>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => generateInstallments(parseInt(formData.total_installments || '1'))}
+                                            className="px-3 py-1 bg-white text-emerald-600 text-xs font-bold rounded-lg border border-emerald-200 hover:bg-emerald-100 transition-colors"
+                                        >
+                                            Generar Grid
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* TABLA SICAS DE RECIBOS EDITABLES (v19) */}
+                            {installments.length > 0 && (
+                                <div className="mt-6 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center text-xs font-bold text-slate-600 uppercase">
+                                        GESTIÓN DE RECIBOS EDITABLE
+                                    </div>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full text-left text-xs">
+                                            <thead className="bg-slate-100 text-slate-500 font-bold">
+                                                <tr>
+                                                    <th className="p-3">#</th>
+                                                    <th className="p-3">Vencimiento</th>
+                                                    <th className="p-3">Prima Neta</th>
+                                                    <th className="p-3">Derecho</th>
+                                                    <th className="p-3">IVA</th>
+                                                    <th className="p-3 text-right">Total</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 italic">
+                                                {installments.map((inst, idx) => (
+                                                    <tr key={idx} className="hover:bg-slate-50/50">
+                                                        <td className="p-3 font-bold text-slate-400">{inst.installment_number}</td>
+                                                        <td className="p-2">
+                                                            <input
+                                                                type="date"
+                                                                value={inst.due_date}
+                                                                onChange={(e) => handleInstallmentChange(idx, 'due_date', e.target.value)}
+                                                                className="bg-transparent border-none p-1 font-medium w-full text-slate-600"
+                                                            />
+                                                        </td>
+                                                        <td className="p-2">
+                                                            <input type="number" value={inst.premium_net} onChange={(e) => handleInstallmentChange(idx, 'premium_net', e.target.value)} className="bg-transparent border-none p-1 w-20 text-right" />
+                                                        </td>
+                                                        <td className="p-2">
+                                                            <input type="number" value={inst.policy_fee} onChange={(e) => handleInstallmentChange(idx, 'policy_fee', e.target.value)} className="bg-transparent border-none p-1 w-16 text-right" />
+                                                        </td>
+                                                        <td className="p-2">
+                                                            <input type="number" value={inst.vat_amount} onChange={(e) => handleInstallmentChange(idx, 'vat_amount', e.target.value)} className="bg-transparent border-none p-1 w-20 text-right" />
+                                                        </td>
+                                                        <td className="p-3 text-right font-bold text-slate-900 bg-slate-50/30">
+                                                            ${formatCurrency(inst.total_amount)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
                         </div>
                     )}
                 </div>
@@ -494,7 +584,7 @@ export default function EditPolicyPage({ params }: { params: any }) {
                         </button>
                     )}
                 </div>
-            </form>
-        </div>
+            </form >
+        </div >
     )
 }
