@@ -1,8 +1,12 @@
 export type PaymentMethod = 'Contado' | 'Semestral' | 'Trimestral' | 'Mensual' | 'Anual' | 'Domiciliado'
 
-// Helper para formatear fechas
+// Helper para formatear fechas (v16 - Formato numérico ordenado)
 const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('es-MX', { day: '2-digit', month: 'long', year: 'numeric' })
+    const d = new Date(dateString)
+    const day = String(d.getUTCDate()).padStart(2, '0')
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0')
+    const year = d.getUTCFullYear()
+    return `${day}-${month}-${year}`
 }
 
 // Helper para generar el link de WhatsApp
@@ -14,7 +18,7 @@ export const generateWhatsAppLink = (phone: string, text: string) => {
 }
 
 /**
- * Genera el copy de WhatsApp basado en las reglas de negocio (v14 - Formato Rico)
+ * Genera el copy de WhatsApp basado en las reglas de negocio (v16 - Formato Rico + Recibos)
  */
 export const getCollectionMessage = (
     clientName: string,
@@ -27,7 +31,10 @@ export const getCollectionMessage = (
     startDate: string,
     targetDate: string,
     subBranch?: string,
-    notes?: string
+    notes?: string,
+    currentInstallment?: number,
+    totalInstallments?: number,
+    paymentLink?: string
 ) => {
     const isAnual = paymentMethod === 'Contado' || paymentMethod === 'Anual'
     const isDomiciliado = paymentMethod === 'Domiciliado' || paymentMethod?.toLowerCase().includes('tarjeta')
@@ -46,15 +53,27 @@ export const getCollectionMessage = (
         alertTitle = 'PENDIENTE DE PAGO'
     }
 
+    if (isDomiciliado) {
+        statusIcon = '💳'
+        alertTitle = 'AVISO DE CARGO AUTOMÁTICO'
+        footerMessage = 'Solo asegúrate de contar con los fondos disponibles en tu cuenta. ¡Saludos!'
+    }
+
     // Cabecera Común
     const header = `${statusIcon} *${alertTitle}*\n\nHola *${clientName}*, espero que estés teniendo un excelente día. Te envío la información de tu próximo recibo a liquidar:\n\n`
+
+    // Construcción de Ficha de Recibo
+    const receiptInfo = (totalInstallments && totalInstallments > 1)
+        ? ` (Recibo ${currentInstallment || 1} de ${totalInstallments})`
+        : ''
 
     // Cuerpo de Datos (Ficha Técnica)
     const body = [
         `👤 *Asegurado:* ${clientName}`,
+        `🏢 *Aseguradora:* ${insurerName}`,
         `🛡️ *Ramo:* ${policyType}`,
         `📄 *Descripción:* ${subBranch || 'Cobertura Original'}`,
-        `🔢 *Póliza/Recibo:* \`${policyNumber}\``,
+        `🔢 *Póliza/Recibo:* \`${policyNumber}\`${receiptInfo}`,
         `📆 *Periodo:* ${formatDate(startDate)} al ${formatDate(targetDate)}`,
         `💳 *Método:* ${paymentMethod}`,
         `💰 *Total a Pagar:* *$${amount.toLocaleString('es-MX', { minimumFractionDigits: 2 })}*`
@@ -62,23 +81,19 @@ export const getCollectionMessage = (
 
     // Lógica de Semáforo / Días de Gracia
     let graceInfo = ''
-    if (isAnual) {
+    if (isAnual && !isDomiciliado) {
         const cancelDate = new Date(targetDate)
         cancelDate.setDate(cancelDate.getDate() + 30)
 
         graceInfo = `\n\n📌 *Días de Gracia:* 30 días naturales\n⏳ *Límite de gracia:* ${formatDate(cancelDate.toISOString())}`
-
-        // Filtrado por reglas de negocio
-        if (daysRemaining > 21) return null // Muy temprano para avisar
-        if (daysRemaining < -30) return null // Ya pasó el periodo de gracia, probablemente cancelada
-    } else {
+    } else if (!isDomiciliado) {
         graceInfo = `\n\n⚠️ *Nota:* Los recibos fraccionados no cuentan con periodo de gracia institucional.`
-
-        if (daysRemaining > 10) return null // Muy temprano para fraccionados
     }
+
+    // Link de Pago si existe
+    const paymentInfo = paymentLink ? `\n\n🔗 *Pagar Ahora:* ${paymentLink}` : ''
 
     const finalSection = `\n\n${footerMessage}`
 
-    return header + body + graceInfo + finalSection
+    return header + body + graceInfo + paymentInfo + finalSection
 }
-

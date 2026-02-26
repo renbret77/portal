@@ -42,6 +42,10 @@ export async function GET(request: Request) {
                 status,
                 sub_branch,
                 notes,
+                total_installments,
+                current_installment,
+                payment_link,
+                is_domiciled,
                 clients (first_name, last_name, phone),
                 insurers (alias, name),
                 insurance_lines (name)
@@ -91,7 +95,10 @@ export async function GET(request: Request) {
                 policy.start_date,
                 targetDate.toISOString(),
                 policy.sub_branch,
-                policy.notes
+                policy.notes,
+                policy.current_installment,
+                policy.total_installments,
+                policy.payment_link
             )
 
             if (!messageStr) return null
@@ -102,7 +109,11 @@ export async function GET(request: Request) {
                 phone: clientPhone,
                 message: messageStr,
                 urgency_days: diffDays,
-                payment_method: paymentMethod
+                payment_method: paymentMethod,
+                // Payload extra para Email
+                is_domiciled: policy.is_domiciled,
+                payment_link: policy.payment_link,
+                receipt_number: `${policy.current_installment || 1}/${policy.total_installments || 1}`
             }
         }).filter(item => item !== null)
 
