@@ -829,7 +829,7 @@ export default function NewPolicyPage() {
                                                                 <input
                                                                     type="text"
                                                                     value={inst.premium_net}
-                                                                    onBlur={(e) => handleInstallmentChange(idx, 'premium_net', formatInputCurrency(e.target.value.replace(/,/g, '')))}
+                                                                    onBlur={(e) => handleInstallmentChange(idx, 'premium_net', formatInputCurrency(String(e.target.value || '').replace(/,/g, '')))}
                                                                     onChange={(e) => handleInstallmentChange(idx, 'premium_net', e.target.value)}
                                                                     className="bg-transparent border-none focus:ring-0 p-1 w-20 text-right"
                                                                 />
@@ -838,7 +838,7 @@ export default function NewPolicyPage() {
                                                                 <input
                                                                     type="text"
                                                                     value={inst.policy_fee}
-                                                                    onBlur={(e) => handleInstallmentChange(idx, 'policy_fee', formatInputCurrency(e.target.value.replace(/,/g, '')))}
+                                                                    onBlur={(e) => handleInstallmentChange(idx, 'policy_fee', formatInputCurrency(String(e.target.value || '').replace(/,/g, '')))}
                                                                     onChange={(e) => handleInstallmentChange(idx, 'policy_fee', e.target.value)}
                                                                     className="bg-transparent border-none focus:ring-0 p-1 w-16 text-right"
                                                                 />
@@ -847,7 +847,7 @@ export default function NewPolicyPage() {
                                                                 <input
                                                                     type="text"
                                                                     value={inst.surcharges}
-                                                                    onBlur={(e) => handleInstallmentChange(idx, 'surcharges', formatInputCurrency(e.target.value.replace(/,/g, '')))}
+                                                                    onBlur={(e) => handleInstallmentChange(idx, 'surcharges', formatInputCurrency(String(e.target.value || '').replace(/,/g, '')))}
                                                                     onChange={(e) => handleInstallmentChange(idx, 'surcharges', e.target.value)}
                                                                     className="bg-transparent border-none focus:ring-0 p-1 w-16 text-right"
                                                                 />
@@ -856,13 +856,13 @@ export default function NewPolicyPage() {
                                                                 <input
                                                                     type="text"
                                                                     value={inst.vat_amount}
-                                                                    onBlur={(e) => handleInstallmentChange(idx, 'vat_amount', formatInputCurrency(e.target.value.replace(/,/g, '')))}
+                                                                    onBlur={(e) => handleInstallmentChange(idx, 'vat_amount', formatInputCurrency(String(e.target.value || '').replace(/,/g, '')))}
                                                                     onChange={(e) => handleInstallmentChange(idx, 'vat_amount', e.target.value)}
                                                                     className="bg-transparent border-none focus:ring-0 p-1 w-20 text-right"
                                                                 />
                                                             </td>
                                                             <td className="p-3 text-right font-bold text-slate-900 bg-slate-50/30 border-l border-slate-100">
-                                                                ${parseFloat(inst.total_amount?.replace(/,/g, '') || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                                ${formatCurrency(inst.total_amount)}
                                                             </td>
                                                         </tr>
                                                     ))}
