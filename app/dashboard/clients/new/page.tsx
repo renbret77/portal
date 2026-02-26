@@ -119,6 +119,7 @@ export default function NewClientPage() {
             const cleanedData: ClientInsert = {
                 ...formData,
                 user_id: user.id,
+                phone: formData.mobile_phone || formData.phone || null, // Forzar que WhatsApp sea el número primordial
                 // Apply Title Case to names and texts
                 first_name: toTitleCase(formData.first_name || ''),
                 last_name: toTitleCase(formData.last_name || ''),
@@ -126,8 +127,11 @@ export default function NewClientPage() {
                 job_title: formData.job_title ? toTitleCase(formData.job_title) : null,
                 profession: formData.profession ? toTitleCase(formData.profession) : null,
                 status: 'lead' // Ensure status is set
-                // Addresses are array, we sanitize them if needed or trust visual input (optional detailed map here)
             }
+
+            // Delete virtual fields not meant for SQL
+            delete (cleanedData as any).mobile_phone;
+            delete (cleanedData as any).work_phone;
 
             // Cleanup empty date strings to null to avoid SQL errors
             if (cleanedData.birth_date === "") cleanedData.birth_date = null
