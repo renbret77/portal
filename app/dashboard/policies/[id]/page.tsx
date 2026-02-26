@@ -60,20 +60,33 @@ export default function EditPolicyPage({ params }: { params: any }) {
         description: ''
     })
 
-    const parseNum = (val: any) => parseFloat(String(val || '0').replace(/,/g, '')) || 0;
+    const parseNum = (val: any) => {
+        try {
+            if (val === null || val === undefined) return 0;
+            const strVal = String(val).trim();
+            if (strVal === '') return 0;
+            const parsed = parseFloat(strVal.replace(/,/g, ''));
+            return isNaN(parsed) ? 0 : parsed;
+        } catch { return 0; }
+    };
 
     const formatInputCurrency = (val: string | number) => {
-        if (val === '' || val === null || val === undefined) return '';
-        const clean = val.toString().replace(/[^0-9.]/g, '');
-        const parts = clean.split('.');
-        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        if (parts.length > 2) parts.pop();
-        return parts.join('.');
-    }
+        try {
+            if (val === '' || val === null || val === undefined) return '';
+            const clean = String(val).replace(/[^0-9.-]/g, '');
+            if (!clean) return '';
+            const parts = clean.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            if (parts.length > 2) parts.pop();
+            return parts.join('.');
+        } catch { return String(val || ''); }
+    };
 
     const formatCurrency = (val: any) => {
-        return parseNum(val).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    }
+        try {
+            return parseNum(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } catch { return "0.00"; }
+    };
 
     const [installments, setInstallments] = useState<any[]>([])
 
@@ -198,23 +211,27 @@ export default function EditPolicyPage({ params }: { params: any }) {
 
     // Cálculos Automáticos
     useEffect(() => {
-        const net = parseNum(formData.premium_net);
-        const fee = parseNum(formData.policy_fee);
-        const surch = parseNum(formData.surcharge_amount);
-        const disc = parseNum(formData.discount_amount);
-        const extra = parseNum(formData.extra_premium);
-        const vat = parseNum(formData.vat_amount);
+        try {
+            const net = parseNum(formData.premium_net);
+            const fee = parseNum(formData.policy_fee);
+            const surch = parseNum(formData.surcharge_amount);
+            const disc = parseNum(formData.discount_amount);
+            const extra = parseNum(formData.extra_premium);
+            const vat = parseNum(formData.vat_amount);
 
-        const total = net + fee + surch - disc + extra + vat;
+            const total = net + fee + surch - disc + extra + vat;
 
-        setFormData((prev: any) => {
-            const formattedTotal = total.toFixed(2);
-            if (prev.premium_total === formattedTotal) return prev;
-            return {
-                ...prev,
-                premium_total: formattedTotal
-            }
-        })
+            setFormData((prev: any) => {
+                const formattedTotal = total.toFixed(2);
+                if (prev.premium_total === formattedTotal) return prev;
+                return {
+                    ...prev,
+                    premium_total: formattedTotal
+                }
+            })
+        } catch (e) {
+            console.error("Calculation effect error safe catch", e)
+        }
     }, [formData.premium_net, formData.policy_fee, formData.surcharge_amount, formData.discount_amount, formData.extra_premium, formData.vat_amount])
 
     const generateInstallments = (count: number) => {

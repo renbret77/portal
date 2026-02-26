@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OpenAI } from "openai";
-import pdf from "pdf-parse";
+const pdf = require("pdf-parse");
 
 // Inicializar OpenAI
 const openai = new OpenAI({

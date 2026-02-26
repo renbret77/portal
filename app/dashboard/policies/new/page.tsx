@@ -10,6 +10,7 @@ export default function NewPolicyPage() {
     const router = useRouter()
     const [step, setStep] = useState(1)
     const [loading, setLoading] = useState(false)
+    const [isParsingPolicy, setIsParsingPolicy] = useState(false)
 
     // Catalogos
     const [clients, setClients] = useState<any[]>([])
@@ -58,20 +59,33 @@ export default function NewPolicyPage() {
         description: '' // v19.1
     })
 
-    const parseNum = (val: any) => parseFloat(String(val || '0').replace(/,/g, '')) || 0;
+    const parseNum = (val: any) => {
+        try {
+            if (val === null || val === undefined) return 0;
+            const strVal = String(val).trim();
+            if (strVal === '') return 0;
+            const parsed = parseFloat(strVal.replace(/,/g, ''));
+            return isNaN(parsed) ? 0 : parsed;
+        } catch { return 0; }
+    };
 
     const formatInputCurrency = (val: string | number) => {
-        if (val === '' || val === null || val === undefined) return '';
-        const clean = val.toString().replace(/[^0-9.]/g, '');
-        const parts = clean.split('.');
-        parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        if (parts.length > 2) parts.pop();
-        return parts.join('.');
-    }
+        try {
+            if (val === '' || val === null || val === undefined) return '';
+            const clean = String(val).replace(/[^0-9.-]/g, '');
+            if (!clean) return '';
+            const parts = clean.split('.');
+            parts[0] = parts[0].replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            if (parts.length > 2) parts.pop();
+            return parts.join('.');
+        } catch { return String(val || ''); }
+    };
 
     const formatCurrency = (val: any) => {
-        return parseNum(val).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-    }
+        try {
+            return parseNum(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        } catch { return "0.00"; }
+    };
 
     const [installments, setInstallments] = useState<any[]>([])
 
@@ -97,6 +111,78 @@ export default function NewPolicyPage() {
             .select('id, code, description')
             .eq('insurer_id', insurerId)
         setAgentCodes(data || [])
+    }
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+
+        if (file.type !== 'application/pdf') {
+            alert('Por favor, selecciona un archivo PDF válido.')
+            return
+        }
+
+        setIsParsingPolicy(true)
+        const formData = new FormData()
+        formData.append('file', file)
+
+        try {
+            const res = await fetch('/api/policies/parse', {
+                method: 'POST',
+                body: formData
+            })
+
+            const data = await res.json()
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Error al analizar la póliza')
+            }
+
+            // Mapeo automático de resultados
+            setFormData(prev => {
+                const updated = { ...prev }
+
+                if (data.policy_number) updated.policy_number = data.policy_number
+                if (data.start_date) updated.start_date = data.start_date
+                if (data.end_date) updated.end_date = data.end_date
+                if (data.currency) updated.currency = data.currency
+                if (data.payment_method) updated.payment_method = data.payment_method
+                if (data.premium_net) updated.premium_net = data.premium_net.toString()
+                if (data.policy_fee) updated.policy_fee = data.policy_fee.toString()
+                if (data.surcharge_amount) updated.surcharge_amount = data.surcharge_amount.toString()
+                if (data.vat_amount) updated.vat_amount = data.vat_amount.toString()
+                if (data.premium_total) updated.premium_total = data.premium_total.toString()
+
+                // Intentar empatar aseguradora si viene en el texto
+                if (data.insurer_name && insurers.length > 0) {
+                    const foundInsurer = insurers.find(i =>
+                        i.name.toLowerCase().includes(data.insurer_name.toLowerCase()) ||
+                        data.insurer_name.toLowerCase().includes(i.name.toLowerCase()) ||
+                        (i.alias && data.insurer_name.toLowerCase().includes(i.alias.toLowerCase()))
+                    )
+                    if (foundInsurer) {
+                        updated.insurer_id = foundInsurer.id
+                        fetchAgentCodes(foundInsurer.id)
+                    }
+                }
+
+                return updated
+            })
+
+            // Notificamos al usuario del éxito
+            alert('¡Póliza analizada con éxito! Por favor verifica los datos en cada paso.')
+
+            // Si encontró los datos básicos, saltamos al paso 2
+            if (data.policy_number) setStep(2)
+
+        } catch (error: any) {
+            console.error('OCR Error:', error)
+            alert(error.message || 'Ocurrió un error leyendo el PDF con IA')
+        } finally {
+            setIsParsingPolicy(false)
+            // Reset input
+            e.target.value = ''
+        }
     }
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -132,23 +218,27 @@ export default function NewPolicyPage() {
 
     // Lógica de Cálculos Automáticos
     useEffect(() => {
-        const net = parseNum(formData.premium_net);
-        const fee = parseNum(formData.policy_fee);
-        const surch = parseNum(formData.surcharge_amount);
-        const disc = parseNum(formData.discount_amount);
-        const extra = parseNum(formData.extra_premium);
-        const vat = parseNum(formData.vat_amount);
+        try {
+            const net = parseNum(formData.premium_net);
+            const fee = parseNum(formData.policy_fee);
+            const surch = parseNum(formData.surcharge_amount);
+            const disc = parseNum(formData.discount_amount);
+            const extra = parseNum(formData.extra_premium);
+            const vat = parseNum(formData.vat_amount);
 
-        const total = net + fee + surch - disc + extra + vat;
+            const total = net + fee + surch - disc + extra + vat;
 
-        setFormData(prev => {
-            const formattedTotal = total.toFixed(2);
-            if (prev.premium_total === formattedTotal) return prev;
-            return {
-                ...prev,
-                premium_total: formattedTotal
-            }
-        })
+            setFormData(prev => {
+                const formattedTotal = total.toFixed(2);
+                if (prev.premium_total === formattedTotal) return prev;
+                return {
+                    ...prev,
+                    premium_total: formattedTotal
+                }
+            })
+        } catch (e) {
+            console.error("Calculation effect error safe catch", e)
+        }
     }, [formData.premium_net, formData.policy_fee, formData.surcharge_amount, formData.discount_amount, formData.extra_premium, formData.vat_amount])
 
     // Lógica de Vigencia Automática (v19.1)
@@ -381,7 +471,41 @@ export default function NewPolicyPage() {
                                 <p className="text-slate-500 text-sm italic">Vincule la póliza con un cliente y su respectiva aseguradora.</p>
                             </div>
 
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Zona de Lectura Inteligente IA */}
+                            <div className="bg-gradient-to-br from-indigo-50 to-blue-50/30 border-2 border-dashed border-indigo-200 rounded-3xl p-8 relative overflow-hidden group transition-all hover:border-indigo-400">
+                                <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full blur-2xl -mr-16 -mt-16 pointer-events-none"></div>
+                                <div className="absolute bottom-0 left-0 w-24 h-24 bg-blue-500/5 rounded-full blur-xl -ml-12 -mb-12 pointer-events-none"></div>
+
+                                <input
+                                    type="file"
+                                    accept=".pdf"
+                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                    onChange={handleFileUpload}
+                                    disabled={isParsingPolicy}
+                                />
+
+                                <div className="relative z-0 flex flex-col items-center justify-center text-center space-y-4">
+                                    {isParsingPolicy ? (
+                                        <div className="flex flex-col items-center gap-3">
+                                            <div className="w-12 h-12 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+                                            <h4 className="font-bold text-indigo-900">IA Analizando la Póliza...</h4>
+                                            <p className="text-sm text-indigo-600/80 max-w-sm">Extrayendo números, fechas, primas e impuestos. Esto tardará unos segundos.</p>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <div className="w-16 h-16 bg-white rounded-full shadow-sm flex items-center justify-center text-indigo-500 group-hover:scale-110 group-hover:bg-indigo-500 group-hover:text-white transition-all duration-300">
+                                                <Upload className="w-8 h-8" />
+                                            </div>
+                                            <div className="space-y-1">
+                                                <h4 className="text-lg font-bold text-indigo-900">Auto-llenado Mágico con IA 🪄</h4>
+                                                <p className="text-sm text-indigo-600/80">Arrastra aquí el <b className="font-black">PDF</b> de la carátula o haz clic para subirlo.</p>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                                 <div className="space-y-2">
                                     <label className="text-sm font-bold text-slate-700 block ml-1">Cliente Asegurado</label>
                                     <select
