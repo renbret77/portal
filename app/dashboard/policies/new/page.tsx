@@ -597,54 +597,7 @@ export default function NewPolicyPage() {
                                     <p className="text-slate-500 text-sm italic">Defina la moneda, forma de pago y los montos exactos de su carátula.</p>
                                 </div>
 
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm">
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 block ml-1">Moneda</label>
-                                        <select
-                                            name="currency"
-                                            className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
-                                            value={formData.currency}
-                                            onChange={handleChange}
-                                        >
-                                            <option value="MXN">Pesos (MXN)</option>
-                                            <option value="USD">Dólares (USD)</option>
-                                            <option value="UDI">UDIS</option>
-                                            <option value="EUR">Euros (EUR)</option>
-                                        </select>
-                                    </div>
 
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
-                                        <select
-                                            name="payment_method"
-                                            className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-emerald-700"
-                                            value={formData.payment_method}
-                                            onChange={handleChange}
-                                        >
-                                            <option value="Contado">Anual / Contado</option>
-                                            <option value="Semestral">Semestral</option>
-                                            <option value="Trimestral">Trimestral</option>
-                                            <option value="Mensual">Mensual</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <label className="text-sm font-bold text-slate-700 block ml-1">Generación de Recibos</label>
-                                        <div className="flex items-center gap-2 p-3 bg-white rounded-xl border border-slate-200">
-                                            <div className="flex-1">
-                                                <p className="text-xs font-bold text-emerald-800">{formData.total_installments} recibos</p>
-                                                <p className="text-[10px] text-slate-500">Calculados auto.</p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => generateInstallments(parseInt(formData.total_installments || '1'))}
-                                                className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors"
-                                            >
-                                                Generar Grid
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
 
                                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                                     <div className="space-y-4">
@@ -743,9 +696,11 @@ export default function NewPolicyPage() {
                                             <div className="absolute top-0 right-0 w-32 h-32 bg-emerald-500/10 rounded-full -mr-16 -mt-16"></div>
 
                                             <div className="space-y-3 relative z-10">
-                                                <div className="flex justify-between text-slate-400 text-xs font-bold uppercase tracking-widest">
-                                                    <span>Subtotal</span>
-                                                    <span>{formData.currency}</span>
+                                                <div className="flex justify-between items-center text-slate-400 text-xs font-bold uppercase tracking-widest">
+                                                    <span>Subtotal antes de IVA</span>
+                                                    <span className="text-sm text-slate-300">
+                                                        {formData.currency} ${formatCurrency((parseNum(formData.premium_net) + parseNum(formData.policy_fee) + parseNum(formData.surcharge_amount) - parseNum(formData.discount_amount)).toFixed(2))}
+                                                    </span>
                                                 </div>
 
                                                 <div className="flex justify-between items-baseline group">
@@ -757,8 +712,8 @@ export default function NewPolicyPage() {
                                                             value={formData.tax_percentage}
                                                             onChange={handleChange}
                                                             onBlur={handleVatPercentageBlur}
-                                                            className="w-10 bg-transparent border-b border-slate-600 outline-none focus:border-emerald-400 text-center text-xs text-slate-300"
-                                                        /> <span className="text-xs text-slate-300">%</span>
+                                                            className="w-12 bg-transparent border-b border-slate-600 outline-none focus:border-emerald-400 text-center text-lg font-black text-white"
+                                                        /> <span className="text-lg font-black text-white">%</span>
                                                     </div>
                                                     <div className="flex items-center gap-1">
                                                         <span className="text-emerald-400 font-bold">+ $</span>
@@ -789,11 +744,60 @@ export default function NewPolicyPage() {
                                     </div>
                                 </div>
 
-                                {/* TABLA SICAS DE RECIBOS EDITABLES (v19) */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8 bg-slate-50 p-6 rounded-2xl border border-slate-100 shadow-sm">
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 block ml-1">Moneda</label>
+                                        <select
+                                            name="currency"
+                                            className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold"
+                                            value={formData.currency}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="MXN">Pesos (MXN)</option>
+                                            <option value="USD">Dólares (USD)</option>
+                                            <option value="UDI">UDIS</option>
+                                            <option value="EUR">Euros (EUR)</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 block ml-1">Forma de Pago</label>
+                                        <select
+                                            name="payment_method"
+                                            className="w-full p-3 rounded-xl border border-slate-200 bg-white focus:ring-4 focus:ring-emerald-500/10 focus:border-emerald-500 outline-none transition-all font-bold text-emerald-700"
+                                            value={formData.payment_method}
+                                            onChange={handleChange}
+                                        >
+                                            <option value="Contado">Anual / Contado</option>
+                                            <option value="Semestral">Semestral</option>
+                                            <option value="Trimestral">Trimestral</option>
+                                            <option value="Mensual">Mensual</option>
+                                        </select>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-sm font-bold text-slate-700 block ml-1">Generación de Recibos</label>
+                                        <div className="flex items-center gap-2 p-3 bg-white rounded-xl border border-slate-200">
+                                            <div className="flex-1">
+                                                <p className="text-xs font-bold text-emerald-800">{formData.total_installments} recibos</p>
+                                                <p className="text-[10px] text-slate-500">Calculados auto.</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => generateInstallments(parseInt(formData.total_installments || '1'))}
+                                                className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-bold rounded-lg border border-emerald-100 hover:bg-emerald-100 transition-colors"
+                                            >
+                                                Generar Grid
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* TABLA DE RECIBOS EDITABLES (v19) */}
                                 {installments.length > 0 && (
-                                    <div className="mt-6 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                                    <div className="mt-8 border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
                                         <div className="bg-slate-50 p-3 border-b border-slate-200 flex justify-between items-center">
-                                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Gestión de Recibos (Estilo SICAS)</span>
+                                            <span className="text-xs font-bold text-slate-600 uppercase tracking-wider">Gestión de Recibos</span>
                                             <span className="text-[10px] bg-slate-200 text-slate-600 px-2 py-0.5 rounded-full font-bold">Editable</span>
                                         </div>
                                         <div className="overflow-x-auto">
@@ -804,6 +808,7 @@ export default function NewPolicyPage() {
                                                         <th className="p-3">Vencimiento</th>
                                                         <th className="p-3">Prima Neta</th>
                                                         <th className="p-3">Derecho</th>
+                                                        <th className="p-3">Recargo</th>
                                                         <th className="p-3">IVA</th>
                                                         <th className="p-3 text-right">Total</th>
                                                     </tr>
@@ -822,30 +827,42 @@ export default function NewPolicyPage() {
                                                             </td>
                                                             <td className="p-2">
                                                                 <input
-                                                                    type="number"
+                                                                    type="text"
                                                                     value={inst.premium_net}
+                                                                    onBlur={(e) => handleInstallmentChange(idx, 'premium_net', formatInputCurrency(e.target.value.replace(/,/g, '')))}
                                                                     onChange={(e) => handleInstallmentChange(idx, 'premium_net', e.target.value)}
                                                                     className="bg-transparent border-none focus:ring-0 p-1 w-20 text-right"
                                                                 />
                                                             </td>
                                                             <td className="p-2">
                                                                 <input
-                                                                    type="number"
+                                                                    type="text"
                                                                     value={inst.policy_fee}
+                                                                    onBlur={(e) => handleInstallmentChange(idx, 'policy_fee', formatInputCurrency(e.target.value.replace(/,/g, '')))}
                                                                     onChange={(e) => handleInstallmentChange(idx, 'policy_fee', e.target.value)}
                                                                     className="bg-transparent border-none focus:ring-0 p-1 w-16 text-right"
                                                                 />
                                                             </td>
                                                             <td className="p-2">
                                                                 <input
-                                                                    type="number"
+                                                                    type="text"
+                                                                    value={inst.surcharges}
+                                                                    onBlur={(e) => handleInstallmentChange(idx, 'surcharges', formatInputCurrency(e.target.value.replace(/,/g, '')))}
+                                                                    onChange={(e) => handleInstallmentChange(idx, 'surcharges', e.target.value)}
+                                                                    className="bg-transparent border-none focus:ring-0 p-1 w-16 text-right"
+                                                                />
+                                                            </td>
+                                                            <td className="p-2">
+                                                                <input
+                                                                    type="text"
                                                                     value={inst.vat_amount}
+                                                                    onBlur={(e) => handleInstallmentChange(idx, 'vat_amount', formatInputCurrency(e.target.value.replace(/,/g, '')))}
                                                                     onChange={(e) => handleInstallmentChange(idx, 'vat_amount', e.target.value)}
                                                                     className="bg-transparent border-none focus:ring-0 p-1 w-20 text-right"
                                                                 />
                                                             </td>
                                                             <td className="p-3 text-right font-bold text-slate-900 bg-slate-50/30 border-l border-slate-100">
-                                                                ${parseFloat(inst.total_amount).toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                                                                ${parseFloat(inst.total_amount?.replace(/,/g, '') || 0).toLocaleString('en-US', { minimumFractionDigits: 2 })}
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -907,15 +924,15 @@ export default function NewPolicyPage() {
                         </button>
                     )}
                 </div>
-            </form>
+            </form >
 
             {/* Hint Box */}
-            <div className="flex justify-center mt-6">
+            < div className="flex justify-center mt-6" >
                 <div className="inline-flex items-center gap-3 px-4 py-2 bg-white rounded-full border border-slate-100 shadow-sm text-xs text-slate-400 font-medium italic">
                     <Upload className="w-3.5 h-3.5" />
                     Consejo: Podrá cargar el PDF de la carátula una vez guardada la base de la póliza.
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     )
 }
