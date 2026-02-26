@@ -60,10 +60,15 @@ export async function GET(request: Request) {
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
 
             const clientName = policy.clients?.first_name || 'Cliente'
-            const clientPhone = policy.clients?.phone || ''
+            let clientPhone = (policy.clients?.phone || '').replace(/\D/g, '')
+
+            // Caso especial México: Forzar formato WhatsApp 52 1 [10 dígitos]
+            if (clientPhone.startsWith('52') && clientPhone.length === 12) {
+                clientPhone = '521' + clientPhone.substring(2)
+            }
 
             // Si el cliente no tiene teléfono, no perdemos tiempo regresándolo a N8N
-            if (!clientPhone || clientPhone.trim() === '') return null
+            if (!clientPhone || clientPhone === '') return null
 
             const policyType = policy.insurance_lines?.name || 'Seguro'
             const insurerName = policy.insurers?.name || 'Aseguradora'
