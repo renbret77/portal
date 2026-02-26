@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OpenAI } from "openai";
-const pdf = require("pdf-parse");
-
 // Inicializar OpenAI
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -25,6 +23,7 @@ export async function POST(req: NextRequest) {
 
         if (file.type === "application/pdf") {
             try {
+                const pdf = require("pdf-parse");
                 const data = await pdf(buffer);
                 extractedText = data.text;
             } catch (err) {
