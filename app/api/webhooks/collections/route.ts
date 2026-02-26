@@ -17,7 +17,11 @@ export async function GET(request: Request) {
         const expectedKey = process.env.N8N_API_KEY
 
         if (expectedKey) {
-            if (!authHeader || authHeader !== `Bearer ${expectedKey}`) {
+            // Check for case-insensitive 'bearer' handling
+            const authPrefix = authHeader?.substring(0, 6)?.toLowerCase()
+            const authToken = authHeader?.substring(7)?.trim()
+
+            if (!authHeader || authPrefix !== 'bearer' || authToken !== expectedKey) {
                 return NextResponse.json({ error: "Unauthorized access. Invalid N8N_API_KEY." }, { status: 401 })
             }
         } else {
