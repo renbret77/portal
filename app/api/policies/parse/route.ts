@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { OpenAI } from "openai";
-// Inicializar OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
 
 export async function POST(req: NextRequest) {
     try {
@@ -67,6 +63,11 @@ Extrae y devuelve un JSON con la siguiente estructura exacta:
 
 Si no logras encontrar un dato, aségnale el valor null. Si los montos están, por ejemplo, como "$10,500.00", devuélvelo como un número (10500.00).
 Asegúrate de responder SOLO el JSON.`;
+
+        // Inicializar OpenAI dentro de la petición para evitar errores durante build
+        const openai = new OpenAI({
+            apiKey: process.env.OPENAI_API_KEY,
+        });
 
         const completion = await openai.chat.completions.create({
             model: "gpt-4o-mini",
